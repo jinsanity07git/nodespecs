@@ -23,6 +23,8 @@ Extracting and Fetching all system and hardware information such as os details, 
 ```
 !git clone https://github.com/jinsanity07git/hardwareSummary
 !python hardwareSummary/hardware.py
+!python hardwareSummary/cpu-benchmark.py
+
 ```
 
 
