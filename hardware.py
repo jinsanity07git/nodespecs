@@ -64,16 +64,20 @@ def info_cpu():
     # number of cores
     print("Physical cores:", psutil.cpu_count(logical=False))
     print("Total cores:", psutil.cpu_count(logical=True))
-    # CPU frequencies
-    cpufreq = psutil.cpu_freq()
-    print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
-    print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
-    print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
-    # CPU usage
-    print("CPU Usage Per Core:")
-    for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
-        print(f"{f'Core':>8} {i:>2}: {percentage :>6}%")
-    print(f"Total CPU Usage: {psutil.cpu_percent()}%")
+    try:
+        # CPU frequencies
+        cpufreq = psutil.cpu_freq()
+        print(f"Max Frequency: {cpufreq.max:.2f}Mhz")
+        print(f"Min Frequency: {cpufreq.min:.2f}Mhz")
+        print(f"Current Frequency: {cpufreq.current:.2f}Mhz")
+        # CPU usage
+        print("CPU Usage Per Core:")
+        for i, percentage in enumerate(psutil.cpu_percent(percpu=True, interval=1)):
+            print(f"{f'Core':>8} {i:>2}: {percentage :>6}%")
+        print(f"Total CPU Usage: {psutil.cpu_percent()}%")
+    except FileNotFoundError:
+        pass
+
 
 def info_mem():
     # Memory Information
