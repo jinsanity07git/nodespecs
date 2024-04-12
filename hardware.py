@@ -1,10 +1,30 @@
 #Be ready to enjoy your python code--UTB
 # https://www.thepythoncode.com/article/get-hardware-system-information-python
 #
-import psutil
+
 import platform
 from datetime import datetime
+import cpuinfo
 
+def check_imp():
+    import sys
+    import subprocess
+    try:
+        import psutil
+        return True
+    except ModuleNotFoundError as e:
+        # Extract the name of the missing module
+        missing_module = str(e).split("'")[1]
+        print(f"Attempting to install missing module: {missing_module}")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", missing_module])
+        return False
+
+psenv = False
+while not psenv:
+    psenv = check_imp()
+if psenv:
+    import psutil
+    
 def get_size(bytes, suffix="B"):
     """
     Scale bytes to its proper format
@@ -36,8 +56,11 @@ def boot_time():
     print(f"Boot Time: {bt.year}/{bt.month}/{bt.day} {bt.hour}:{bt.minute}:{bt.second}")
 
 def info_cpu():
+    import psutil
     # let's print CPU information
     print("="*40, "CPU Info", "="*40)
+    
+    print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
     # number of cores
     print("Physical cores:", psutil.cpu_count(logical=False))
     print("Total cores:", psutil.cpu_count(logical=True))
@@ -169,4 +192,4 @@ if __name__ == "__main__":
     info_sys()
     info_cpu()
     info_mem()
-    info_gpu()
+    # info_gpu()
