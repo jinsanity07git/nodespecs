@@ -1,0 +1,14 @@
+LICENSE
+README.md
+pyproject.toml
+src/nodespecs.egg-info/PKG-INFO
+src/nodespecs.egg-info/SOURCES.txt
+src/nodespecs.egg-info/dependency_links.txt
+src/nodespecs.egg-info/entry_points.txt
+src/nodespecs.egg-info/requires.txt
+src/nodespecs.egg-info/top_level.txt
+src/specs/__init__.py
+src/specs/__main__.py
+src/specs/cpu-benchmark.py
+src/specs/cpuinfo.py
+src/specs/hardware.py

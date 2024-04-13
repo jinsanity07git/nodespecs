@@ -1,0 +1,3 @@
+# config.toml
+[feed]
+url = "https://realpython.com/atom.xml"

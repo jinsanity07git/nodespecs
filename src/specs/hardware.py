@@ -4,7 +4,7 @@
 
 import platform
 from datetime import datetime
-import cpuinfo
+from . import cpuinfo
 
 def check_imp():
     import sys

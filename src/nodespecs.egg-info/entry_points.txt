@@ -1,0 +1,2 @@
+[console_scripts]
+realpython = specs.__main__:main
