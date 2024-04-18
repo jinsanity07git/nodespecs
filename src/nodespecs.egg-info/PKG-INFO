@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: nodespecs
-Version: 0.0.2
+Version: 0.0.5
 Summary: The specs summarize utilities for computer instance
 Author-email: jinsanity <jinsanityff@gmail.com>
 License: The MIT License (MIT)
@@ -16,11 +16,11 @@ Keywords: cpu,gpu,benchmark
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 3
-Requires-Python: >=3.7
+Requires-Python: >=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: psutil>=5.9.5
-Requires-Dist: tabulate>=0.9.0
+Requires-Dist: tabulate>=0.8.0
 Requires-Dist: tomli; python_version < "3.11"
 Provides-Extra: dev
 Requires-Dist: GPUtil; extra == "dev"
@@ -28,6 +28,24 @@ Requires-Dist: pip-tools; extra == "dev"
 
 # hardwareSummary
 Extracting and Fetching all system and hardware information such as os details, CPU and GPU information, disk and network usage in Python using platform, psutil and gputil libraries.
+
+
+
+### install and use with pip
+
+```shell
+pip install nodespecs
+python -m specs
+```
+
+```
+sudo apt install python3-pip
+python3 -m pip install nodespecs && python3 -m specs
+```
+
+
+
+#### Deprecated  (install and use with git)
 
 ```
 !git clone https://github.com/jinsanity07git/hardwareSummary && python hardwareSummary/hardware.py && python hardwareSummary/cpu-benchmark.py
@@ -49,7 +67,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ### CPU collection
 
-| Brand                         | CPU                                            | Arch   | OS         | Benchmarking | Comb                                                         | Score |
+| Nickname                      | CPU                                            | Arch   | OS         | Benchmarking | Comb                                                         | Score |
 | ----------------------------- | ---------------------------------------------- | ------ | ---------- | ------------ | ------------------------------------------------------------ | ----- |
 | TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows    | 15.654       | Core-i9-14900KF                                              | 39.25 |
 | TC14                          | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64  | Windows 10 | 12.991       | Core-i9-13900K                                               | 38.76 |
@@ -66,8 +84,6 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 ### GPU collection
-
-
 
 
 

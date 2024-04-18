@@ -1,6 +1,24 @@
 # hardwareSummary
 Extracting and Fetching all system and hardware information such as os details, CPU and GPU information, disk and network usage in Python using platform, psutil and gputil libraries.
 
+
+
+### install and use with pip
+
+```shell
+pip install nodespecs
+python -m specs
+```
+
+```
+sudo apt install python3-pip
+python3 -m pip install nodespecs && python3 -m specs
+```
+
+
+
+#### Deprecated  (install and use with git)
+
 ```
 !git clone https://github.com/jinsanity07git/hardwareSummary && python hardwareSummary/hardware.py && python hardwareSummary/cpu-benchmark.py
 
@@ -21,7 +39,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ### CPU collection
 
-| Brand                         | CPU                                            | Arch   | OS         | Benchmarking | Comb                                                         | Score |
+| Nickname                      | CPU                                            | Arch   | OS         | Benchmarking | Comb                                                         | Score |
 | ----------------------------- | ---------------------------------------------- | ------ | ---------- | ------------ | ------------------------------------------------------------ | ----- |
 | TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows    | 15.654       | Core-i9-14900KF                                              | 39.25 |
 | TC14                          | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64  | Windows 10 | 12.991       | Core-i9-13900K                                               | 38.76 |
@@ -38,8 +56,6 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 ### GPU collection
-
-
 
 
 
