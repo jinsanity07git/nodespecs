@@ -15,6 +15,12 @@ sudo apt install python3-pip
 python3 -m pip install nodespecs && python3 -m specs
 ```
 
+```python
+import specs
+
+specs.info_gpu()
+```
+
 
 
 #### Deprecated  (install and use with git)
@@ -59,13 +65,20 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 
-| id    | name                   | total memory | Synthetic benchmark | CUDA API |
-| ----- | ---------------------- | ------------ | ------------------- | -------- |
-| colab | Tesla T4               | 15360.0MB    | 28.16               | 70627    |
-| dell  | NVIDIA T600 Laptop GPU | 4096.0MB     | 16.69               | 26600    |
+| id    | name                    | total memory | Synthetic benchmark | CUDA API |
+| ----- | ----------------------- | ------------ | ------------------- | -------- |
+| 17    | NVIDIA GeForce RTX 4060 | 8188.0MB     | 50.69               | NA       |
+| colab | Tesla T4                | 15360.0MB    | 28.16               | 70627    |
+| dell  | NVIDIA T600 Laptop GPU  | 4096.0MB     | 16.69               | 26600    |
+| 01    | Quadro M4000            | 8192.0MB     | 17.27               | 16648    |
+
+
 
 
 
 Performance source
 
+* https://browser.geekbench.com/
+  * 
+* https://technical.city/en/video/GeForce-RTX-4060-vs-Tesla-T4
 * https://technical.city/en/video/Tesla-T4-vs-T600
