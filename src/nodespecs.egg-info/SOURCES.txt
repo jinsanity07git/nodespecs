@@ -9,7 +9,7 @@ src/nodespecs.egg-info/requires.txt
 src/nodespecs.egg-info/top_level.txt
 src/specs/__init__.py
 src/specs/__main__.py
+src/specs/benchmark.py
 src/specs/cmd.py
-src/specs/cpu-benchmark.py
 src/specs/cpuinfo.py
 src/specs/hardware.py
