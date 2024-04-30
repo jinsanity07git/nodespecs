@@ -53,7 +53,6 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ### CPU collection
 
-
 | Nickname                      | CPU                                            | Arch   | OS            | Benchmarking | Comb                                                         | Score |
 | ----------------------------- | ---------------------------------------------- | ------ | ------------- | ------------ | ------------------------------------------------------------ | ----- |
 | TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
@@ -70,6 +69,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 | aws cloudshell                | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64 | Linux         | 49.396       |                                                              |       |
 | JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64  | Windows       | 62.969       |                                                              |       |
 | Oracle 1G-1G-0.5Gbps          | AMD EPYC 7551 32-Core Processor                | x86_64 | Linux         | 98.732       | EPYC-7551                                                    | 14.67 |
+| mini PC                       | Intel(R) Atom(TM) x5-Z8350 CPU @ 1.44GHz       | x86_64 | Linux         | 135.107      | Atom-x5-Z8350                                                | 0.57  |
 
 ### GPU collection
 
