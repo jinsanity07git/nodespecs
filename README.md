@@ -52,7 +52,6 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 ### CPU collection
-
 | Nickname                      | CPU                                            | Arch   | OS            | Benchmarking | Comb                                                         | Score |
 | ----------------------------- | ---------------------------------------------- | ------ | ------------- | ------------ | ------------------------------------------------------------ | ----- |
 | TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
@@ -65,6 +64,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 | 2018 Macbook pro              | Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz       | x86_64 | Darwin 22.1.0 | 37.105       | [Core-i7-8559U](https://technical.city/en/cpu/Core-i7-8559U) | 5.38  |
 | JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | x86_64 | Linux         | 38.685       | [Xeon-Gold-6126](https://technical.city/en/cpu/Xeon-Gold-6126) | 12.21 |
 | TC01                          | Intel(R) Xeon(R) CPU E5-2643 v4 @ 3.40GHz      | AMD64  | Windows       | 39.258       | Xeon-E5-2643-v4                                              | 7.62  |
+| Jquant                        | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64 | Linux         | 40.128       | Xeon-Platinum-8163                                           |       |
 | google colab free tier        | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64 | Linux         | 43.078       |                                                              |       |
 | aws cloudshell                | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64 | Linux         | 49.396       |                                                              |       |
 | JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64  | Windows       | 62.969       |                                                              |       |
