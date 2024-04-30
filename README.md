@@ -53,23 +53,23 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ### CPU collection
 
-| Nickname                      | CPU                                            | Arch   | OS         | Benchmarking | Comb                                                         | Score |
-| ----------------------------- | ---------------------------------------------- | ------ | ---------- | ------------ | ------------------------------------------------------------ | ----- |
-| TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows    | 15.654       | Core-i9-14900KF                                              | 39.25 |
-| TC14                          | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64  | Windows 10 | 12.991       | Core-i9-13900K                                               | 38.76 |
-| Dell Precision 3561           | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64  | Windows    | 23.852       | Core-i7-11800H                                               | 13.47 |
-| TC07                          | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64  | Windows    | 26.723       | Core-i7-9700K                                                | 9.45  |
-| AWS `t2.micro`                | Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz      | x86_64 | Linux      | 27.785       | [Core-i7-9700K](https://technical.city/en/cpu/Core-i7-9700K) | 8.81  |
-| WUYING: 8 vCPU / 16 GiB Linux | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64 | Linux      | 33.572       | [Xeon-Platinum-8163](https://versus.com/en/intel-xeon-gold-6126-vs-intel-xeon-platinum-8168) |       |
-| TC03<br />TC11                | Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz      | AMD64  | Window     | 34.612       | Xeon-Gold-6248R                                              | 23.26 |
-| JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | x86_64 | Linux      | 38.685       | [Xeon-Gold-6126](https://technical.city/en/cpu/Xeon-Gold-6126) | 12.21 |
-| TC01                          | Intel(R) Xeon(R) CPU E5-2643 v4 @ 3.40GHz      | AMD64  | Windows    | 39.258       | Xeon-E5-2643-v4                                              | 7.62  |
-| google colab free tier        | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64 | Linux      | 43.078       |                                                              |       |
-| aws cloudshell                | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64 | Linux      | 49.396       |                                                              |       |
-| JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64  | Windows    | 62.969       |                                                              |       |
-| Oracle 1G-1G-0.5Gbps          | AMD EPYC 7551 32-Core Processor                | x86_64 | Linux      | 98.732       | EPYC-7551                                                    | 14.67 |
 
-
+| Nickname                      | CPU                                            | Arch   | OS            | Benchmarking | Comb                                                         | Score |
+| ----------------------------- | ---------------------------------------------- | ------ | ------------- | ------------ | ------------------------------------------------------------ | ----- |
+| TC17<br />TC16                | Intel(R) Core(TM) i9-14900KF                   | AMD64  | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
+| TC14                          | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64  | Windows 10    | 12.991       | Core-i9-13900K                                               | 38.76 |
+| Dell Precision 3561           | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64  | Windows       | 23.852       | Core-i7-11800H                                               | 13.47 |
+| TC07                          | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64  | Windows       | 26.723       | Core-i7-9700K                                                | 9.45  |
+| AWS `t2.micro`                | Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz      | x86_64 | Linux         | 27.785       | [Core-i7-9700K](https://technical.city/en/cpu/Core-i7-9700K) | 8.81  |
+| WUYING: 8 vCPU / 16 GiB Linux | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64 | Linux         | 33.572       | [Xeon-Platinum-8163](https://versus.com/en/intel-xeon-gold-6126-vs-intel-xeon-platinum-8168) |       |
+| TC03<br />TC11                | Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz      | AMD64  | Window        | 34.612       | Xeon-Gold-6248R                                              | 23.26 |
+| 2018 Macbook pro              | Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz       | x86_64 | Darwin 22.1.0 | 37.105       | [Core-i7-8559U](https://technical.city/en/cpu/Core-i7-8559U) | 5.38  |
+| JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | x86_64 | Linux         | 38.685       | [Xeon-Gold-6126](https://technical.city/en/cpu/Xeon-Gold-6126) | 12.21 |
+| TC01                          | Intel(R) Xeon(R) CPU E5-2643 v4 @ 3.40GHz      | AMD64  | Windows       | 39.258       | Xeon-E5-2643-v4                                              | 7.62  |
+| google colab free tier        | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64 | Linux         | 43.078       |                                                              |       |
+| aws cloudshell                | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64 | Linux         | 49.396       |                                                              |       |
+| JVM                           | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64  | Windows       | 62.969       |                                                              |       |
+| Oracle 1G-1G-0.5Gbps          | AMD EPYC 7551 32-Core Processor                | x86_64 | Linux         | 98.732       | EPYC-7551                                                    | 14.67 |
 
 ### GPU collection
 
