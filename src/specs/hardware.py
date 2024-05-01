@@ -4,7 +4,6 @@
 
 import platform
 from datetime import datetime
-from . import cpuinfo
 import importlib
 
 def check_imp():
@@ -68,7 +67,7 @@ def boot_time():
 def info_cpu():
     # let's print CPU information
     print("="*40, "CPU Info", "="*40)
-    
+    from . import cpuinfo
     print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
     # number of cores
     print("Physical cores:", psutil.cpu_count(logical=False))
