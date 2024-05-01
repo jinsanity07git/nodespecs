@@ -371,7 +371,7 @@ def _check_arch():
 	arch, bits = _parse_arch(DataSource.arch_string_raw)
 	if not arch in ['X86_32', 'X86_64', 'ARM_7', 'ARM_8',
 	               'PPC_64', 'S390X', 'MIPS_32', 'MIPS_64']:
-		raise Exception("py-cpuinfo currently only works on X86 "
+		raise Exception(f"{arch},{bits} \n py-cpuinfo currently only works on X86 "
 		                "and some ARM/PPC/S390X/MIPS CPUs.")
 
 def _obj_to_b64(thing):

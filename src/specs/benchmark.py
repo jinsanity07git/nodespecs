@@ -6,13 +6,13 @@ import time
 import platform
 
 def info_plat():
-  from . import cpuinfo
   from .hardware import info_sys
+  info_sys()
+  from . import cpuinfo
   print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
   print('Arch: ' + cpuinfo.get_cpu_info().get('arch_string_raw', "Unknown"))
   print('OS: ' + platform.system(), platform.release())
   print('Python: ' + platform.python_version())
-  info_sys()
 
 
 def bench_cpu():
