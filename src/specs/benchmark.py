@@ -4,18 +4,24 @@
 
 import time
 import platform
-from . import cpuinfo
 
 def info_plat():
+  from . import cpuinfo
+  from .hardware import info_sys
   print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
   print('Arch: ' + cpuinfo.get_cpu_info().get('arch_string_raw', "Unknown"))
   print('OS: ' + platform.system(), platform.release())
   print('Python: ' + platform.python_version())
+  info_sys()
 
 
 def bench_cpu():
   print('Python CPU Benchmark (Windows, macOS(Darwin), Linux)')
-  info_plat()
+  try:
+    info_plat()
+  except Exception as e:
+    print (str(e))
+    pass
   print('\nBenchmarking: \n')
 
   start_benchmark = 10000 # change this if you like (sample: 1000, 5000, etc)

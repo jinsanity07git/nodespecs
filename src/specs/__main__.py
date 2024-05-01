@@ -1,29 +1,32 @@
 import sys
 import argparse
 
-from .hardware import (info_cpu,
-                       info_mem,
-                       info_disk,
-                       info_net)
 
-from .hardware import (info_sys,
-                       info_mem,
-                       info_disk,
-                       info_net)
-from . import info_plat
 def main():
     parser = argparse.ArgumentParser(description="Display hardware information")
     parser.add_argument('-l','--lite',default=0, help='Display native python platform')
+    parser.add_argument('-u','--utility',default=None, help='run benchmark for single core CPU')
 
     args = parser.parse_args()
-    if (args.lite == "1") or (args.lite == "True") :
-        info_sys()
-        info_plat()
+    if args.utility is None:
+        if (args.lite == "1") or (args.lite == "True") :
+            from . import info_plat
+            info_plat()
+        else:
+            from .hardware import (info_cpu,
+                                   info_mem,
+                                   info_disk,
+                                   info_net)
+            info_cpu()
+            info_mem()
+            info_disk()
+            info_net()
     else:
-        info_cpu()
-        info_mem()
-        info_disk()
-        info_net()
+        if args.utility == "bcpu":
+            from . import bench_cpu
+            bench_cpu()
+
+
 
 if __name__ == "__main__":
     main()
