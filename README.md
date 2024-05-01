@@ -103,6 +103,13 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 
+## Feature in develop
+1. Streaming upload server in Python extended from [uploadserver](https://github.com/Densaugeo/uploadserver).
+2. [py-ios-device](https://github.com/YueChen-C/py-ios-device) python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
+
+
+
+
 
 Performance source
 
