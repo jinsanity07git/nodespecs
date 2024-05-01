@@ -16,7 +16,6 @@ def main():
     parser.add_argument('-l','--lite',default=0, help='Display native python platform')
 
     args = parser.parse_args()
-    print (args.lite,args.lite == "1" )
     if (args.lite == "1") or (args.lite == "True") :
         info_sys()
         info_plat()

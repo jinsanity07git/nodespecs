@@ -4,7 +4,5 @@
 #
 #    pip-compile pyproject.toml
 #
-psutil==5.9.8
-    # via nodespecs (pyproject.toml)
 tabulate==0.8.0
     # via nodespecs (pyproject.toml)

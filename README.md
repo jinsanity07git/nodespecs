@@ -13,6 +13,11 @@ python -c "import specs; specs.info_gpu()"
 ```
 
 ```shell
+# for the machine not compatible with psutil
+python -m specs -l=1
+```
+
+```shell
 ## server
 python -c "import specs; specs.server()"
 
