@@ -16,5 +16,11 @@ keymap = {
         "macOS"   :  "",
         "windows" :  "systeminfo | findstr /B /C:'System Type'"
      },
+
+     "CPUinfo" : {
+        "Linux"   :  ["cat /proc/cpuinfo","lscpu"],
+        "macOS"   :  "",
+        "windows" :  ""
+     },
 }
 
