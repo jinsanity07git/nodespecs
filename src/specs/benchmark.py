@@ -6,13 +6,16 @@ import time
 import platform
 from . import cpuinfo
 
-def bench_cpu():
-  print('Python CPU Benchmark by Alex Dedyura (Windows, macOS(Darwin), Linux)')
+def info_plat():
   print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
   print('Arch: ' + cpuinfo.get_cpu_info().get('arch_string_raw', "Unknown"))
   print('OS: ' + platform.system(), platform.release())
   print('Python: ' + platform.python_version())
 
+
+def bench_cpu():
+  print('Python CPU Benchmark (Windows, macOS(Darwin), Linux)')
+  info_plat()
   print('\nBenchmarking: \n')
 
   start_benchmark = 10000 # change this if you like (sample: 1000, 5000, etc)
@@ -43,3 +46,7 @@ def bench_cpu():
 
   average_benchmark = round(average_benchmark / repeat_benchmark, 3)
   print('Average (from {} repeats): {}s'.format(repeat_benchmark, average_benchmark))
+
+
+if __name__ == "__main__":
+  info_plat()

@@ -13,3 +13,5 @@ src/specs/benchmark.py
 src/specs/cmd.py
 src/specs/cpuinfo.py
 src/specs/hardware.py
+src/specs/communicate/pp.py
+src/specs/communicate/tcpsocket.py

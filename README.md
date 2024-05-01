@@ -12,6 +12,17 @@ python -c "import specs; specs.bench_cpu()"
 python -c "import specs; specs.info_gpu()"
 ```
 
+```shell
+## server
+python -c "import specs; specs.server()"
+
+## client upload wt progress bar
+python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)"
+
+## client upload wo progress bar
+python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)"
+```
+
 ```
 sudo apt update
 sudo apt install python3-pip

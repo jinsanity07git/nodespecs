@@ -5,6 +5,7 @@
 import platform
 from datetime import datetime
 from . import cpuinfo
+import importlib
 
 def check_imp():
     import sys
@@ -19,11 +20,18 @@ def check_imp():
         subprocess.check_call([sys.executable, "-m", "pip", "install", missing_module])
         return False
 
-psenv = False
-while not psenv:
-    psenv = check_imp()
-if psenv:
-    import psutil
+
+def ensure_lib(module_name):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if module_name not in globals():
+                try:
+                    globals()[module_name] = importlib.import_module(module_name)
+                except ImportError:
+                    raise ImportError(f"Module {module_name} is required but not installed.")
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
     
 def get_size(bytes, suffix="B"):
     """
@@ -48,6 +56,7 @@ def info_sys():
     print(f"Machine: {uname.machine}")
     print(f"Processor: {uname.processor}")
 
+@ensure_lib('psutil')
 def boot_time():
     # Boot Time
     print("="*40, "Boot Time", "="*40)
@@ -55,8 +64,8 @@ def boot_time():
     bt = datetime.fromtimestamp(boot_time_timestamp)
     print(f"Boot Time: {bt.year}/{bt.month}/{bt.day} {bt.hour}:{bt.minute}:{bt.second}")
 
+@ensure_lib('psutil')
 def info_cpu():
-    import psutil
     # let's print CPU information
     print("="*40, "CPU Info", "="*40)
     
@@ -78,7 +87,7 @@ def info_cpu():
     except FileNotFoundError:
         pass
 
-
+@ensure_lib('psutil')
 def info_mem():
     # Memory Information
     print("="*40, "Memory Information", "="*40)
@@ -121,6 +130,7 @@ def info_disk():
     print(f"Total read: {get_size(disk_io.read_bytes)}")
     print(f"Total write: {get_size(disk_io.write_bytes)}")
 
+@ensure_lib('psutil')
 def info_net():
     # Network information
     print("="*40, "Network Information", "="*40)
@@ -193,6 +203,7 @@ def info_gpu():
         
 
 if __name__ == "__main__":
+    boot_time()
     info_sys()
     info_cpu()
     info_mem()

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nodespecs"
-version = "0.0.5"
+version = "0.0.8"
 description = "The specs summarize utilities for computer instance"
 readme = "README.md"
 authors = [{ name = "jinsanity", email = "jinsanityff@gmail.com" }]
@@ -18,14 +18,14 @@ classifiers = [
 ]
 keywords = ["cpu", "gpu", "benchmark"]
 dependencies = [
-    "psutil >= 5.9.5",
     "tabulate >= 0.8.0",
     'tomli; python_version < "3.11"',
 ]
 requires-python = ">=3.6"
 
 [project.optional-dependencies]
-dev = ["GPUtil","pip-tools"]
+dev = ["GPUtil","pip-tools",
+       "psutil >= 5.9.5"]
 
 [project.urls]
 Homepage = "https://github.com/jinsanity07git/hardwareSummary"
