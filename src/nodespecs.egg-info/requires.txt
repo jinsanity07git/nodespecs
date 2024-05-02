@@ -1,9 +1,7 @@
 tabulate>=0.8.0
 
-[:python_version < "3.11"]
-tomli
-
 [dev]
 GPUtil
 pip-tools
 psutil>=5.9.5
+toml

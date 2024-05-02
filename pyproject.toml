@@ -1,34 +1,28 @@
-# pyproject.toml
-
 [build-system]
-requires      = ["setuptools>=61.0.0", "wheel"]
+requires = [ "setuptools>=61.0.0", "wheel", "toml",]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "nodespecs"
-version = "0.0.11"
+version = "0.0.14"
 description = "The specs summarize utilities for computer instance"
 readme = "README.md"
-authors = [{ name = "jinsanity", email = "jinsanityff@gmail.com" }]
-license = { file = "LICENSE" }
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-]
-keywords = ["cpu", "gpu", "benchmark"]
-dependencies = [
-    "tabulate >= 0.8.0",
-    'tomli; python_version < "3.11"',
-]
+classifiers = [ "License :: OSI Approved :: MIT License", "Programming Language :: Python", "Programming Language :: Python :: 3",]
+keywords = [ "cpu", "gpu", "benchmark",]
+dependencies = [ "tabulate >= 0.8.0",]
 requires-python = ">=3.6"
+[[project.authors]]
+name = "jinsanity"
+email = "jinsanityff@gmail.com"
+
+[project.license]
+file = "LICENSE"
 
 [project.optional-dependencies]
-dev = ["GPUtil","pip-tools",
-       "psutil >= 5.9.5"]
+dev = [ "GPUtil", "pip-tools", "psutil >= 5.9.5", "toml",]
 
 [project.urls]
-Homepage = "https://github.com/jinsanity07git/hardwareSummary"
+Homepage = "https://github.com/jinsanity07git/nodespecs"
 
 [project.scripts]
 realpython = "specs.__main__:main"

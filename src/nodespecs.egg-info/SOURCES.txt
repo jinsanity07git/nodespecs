@@ -1,6 +1,7 @@
 LICENSE
 README.md
 pyproject.toml
+setup.py
 src/nodespecs.egg-info/PKG-INFO
 src/nodespecs.egg-info/SOURCES.txt
 src/nodespecs.egg-info/dependency_links.txt
@@ -13,5 +14,6 @@ src/specs/benchmark.py
 src/specs/cmd.py
 src/specs/cpuinfo.py
 src/specs/hardware.py
+src/specs/pyinfo.py
 src/specs/communicate/pp.py
 src/specs/communicate/tcpsocket.py
