@@ -6,11 +6,11 @@ import platform
 from datetime import datetime
 import importlib
 
-def check_imp():
+def check_imp(module_name):
     import sys
     import subprocess
     try:
-        import psutil
+        globals()[module_name] = importlib.import_module(module_name)
         return True
     except ModuleNotFoundError as e:
         # Extract the name of the missing module
@@ -24,6 +24,7 @@ def ensure_lib(module_name):
     def decorator(func):
         def wrapper(*args, **kwargs):
             if module_name not in globals():
+                check_imp(module_name)
                 try:
                     globals()[module_name] = importlib.import_module(module_name)
                 except ImportError:
