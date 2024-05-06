@@ -6,11 +6,24 @@ import platform
 from datetime import datetime
 import importlib
 
+def parse_dep(module_name):
+    sep = "=="
+    if sep in module_name:
+        module, version = [ i.strip() for i in module_name.split(sep)]
+    else:
+        module, version = module_name,None
+        
+    debug = 0
+    if debug:
+        print (f"module_name {module}, {version}")
+    return module, version
+
 def check_imp(module_name):
     import sys
     import subprocess
     try:
-        globals()[module_name] = importlib.import_module(module_name)
+        module, version = parse_dep(module_name)
+        globals()[module] = importlib.import_module(module)
         return True
     except ModuleNotFoundError as e:
         # Extract the name of the missing module
@@ -32,7 +45,17 @@ def ensure_lib(module_name):
             return func(*args, **kwargs)
         return wrapper
     return decorator
-    
+
+def ensure_libs(modules):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for module_name in modules:
+                check_imp(module_name)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
 def get_size(bytes, suffix="B"):
     """
     Scale bytes to its proper format
