@@ -91,6 +91,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 | google colab free tier                | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64  | Linux         | 43.078       |                                                              |       |
 | aws cloudshell                        | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64  | Linux         | 49.396       |                                                              |       |
 | JVM                                   | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64   | Windows       | 62.969       |                                                              |       |
+| serv00-FreeBSD                        | Intel(R) Xeon(R) Silver 4214R CPU @ 2.40GHz    | AMD64   | Linux         | 75.571       |                                                              |       |
 | Oracle 1G-1G-0.5Gbps                  | AMD EPYC 7551 32-Core Processor                | x86_64  | Linux         | 98.732       | EPYC-7551                                                    | 14.67 |
 | mini PC                               | Intel(R) Atom(TM) x5-Z8350 CPU @ 1.44GHz       | x86_64  | Linux         | 135.107      | Atom-x5-Z8350                                                | 0.57  |
 
@@ -111,7 +112,8 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ## Feature in develop
 1. Streaming upload server in Python extended from [uploadserver](https://github.com/Densaugeo/uploadserver).
-2. [py-ios-device](https://github.com/YueChen-C/py-ios-device) python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
+2. work through [ws](https://websockets.readthedocs.io/en/stable/intro/index.html), transfer file using `websocket`
+3. [py-ios-device](https://github.com/YueChen-C/py-ios-device) python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
 
 
 
