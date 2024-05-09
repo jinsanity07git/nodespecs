@@ -21,8 +21,8 @@ python -m specs -u="bcpu"
 
 ```shell
 ## server
+python -c "import specs; specs.whoish()"
 python -c "import specs; specs.server()"
-
 ## client upload wt progress bar
 python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)"
 
@@ -77,6 +77,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 | TC14                                  | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10    | 12.991       | Core-i9-13900K                                               | 38.76 |
 | TC17<br />TC16                        | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
 | iPhone 14 Pro Max<br />iPhone15,3[^3] | Apple A16 Bionic[^2]                           | arm64e  | Darwin 23.4.0 | 15.962       |                                                              |       |
+| TC19                                  | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64   | Windows 10    | 20.534       | Core-i7-9700K                                                | 9.45  |
 | Dell Precision 3561                   | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64   | Windows       | 23.852       | Core-i7-11800H                                               | 13.47 |
 | TC07                                  | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64   | Windows       | 26.723       | Core-i7-9700K                                                | 9.45  |
 | oracle cloudshell                     | ARM Cortex-A53                                 | aarch64 | Linux         | 27.489       |                                                              |       |
