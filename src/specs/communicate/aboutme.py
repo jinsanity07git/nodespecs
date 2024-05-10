@@ -11,8 +11,24 @@ def get_hostname():
     return hostname
 
 def whoish(width = 20):
-    print("Hostname:".ljust(width), get_hostname())
-    print("Current User:".ljust(width), get_current_user())
+    aboutme = (get_hostname(),
+               get_current_user() )
+    print("Hostname:".ljust(width),    aboutme[0] )
+    print("Current User:".ljust(width),aboutme[1] )
+    return aboutme
+
+
+def string_to_ascii_list(s):
+    return [ord(char) for char in s]
+
+def derive_uid():
+    aboutme = whoish()
+    sshlogin =  f"{aboutme[1]}@{aboutme[0]}"
+
+    ascii_values = string_to_ascii_list(sshlogin)
+    uid = f"{sum(ascii_values):05}"
+    return sshlogin, uid[:5]
 
 if __name__ == "__main__":
-    whoish()
+    # whoish()
+    print (derive_uid())
