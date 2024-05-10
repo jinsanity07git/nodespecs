@@ -27,7 +27,10 @@ def environment_check():
         elif shell_name == 'TerminalInteractiveShell':
             return "IPython shell"
         elif shell_name == 'Shell':
-            return "Python IDLE"
+            if "colab" in  str(shell.__class__):
+                return "GoogleColabShell"
+            else:
+                return "Python IDLE"
         else:
             return f"Other: {shell_name}"
     except ImportError:
