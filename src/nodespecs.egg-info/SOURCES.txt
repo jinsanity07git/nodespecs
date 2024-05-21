@@ -17,5 +17,5 @@ src/specs/hardware.py
 src/specs/pyinfo.py
 src/specs/communicate/__init__.py
 src/specs/communicate/aboutme.py
-src/specs/communicate/pp.py
 src/specs/communicate/tcpsocket.py
+src/specs/communicate/upload/__init__.py

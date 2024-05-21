@@ -25,6 +25,9 @@ def main():
         if args.utility == "bcpu":
             from . import bench_cpu
             bench_cpu()
+        elif args.utility == "upload":
+            from .communicate import stream_files
+            stream_files()
 
 
 

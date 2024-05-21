@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: nodespecs
-Version: 0.0.18
+Version: 0.0.19
 Summary: The specs summarize utilities for computer instance
 Author-email: jinsanity <jinsanityff@gmail.com>
 License: The MIT License (MIT)
@@ -45,6 +45,7 @@ python -c "import specs; specs.info_gpu()"
 python -m specs -l=1
 
 python -m specs -u="bcpu"
+python -m specs -u="upload"
 ```
 
 ```shell
@@ -100,32 +101,35 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 ### CPU collection
 
 
-| Nickname                              | CPU                                            | Arch    | OS            | Benchmarking | Comb                                                         | Score |
-| ------------------------------------- | ---------------------------------------------- | ------- | ------------- | ------------ | ------------------------------------------------------------ | ----- |
-| TC14                                  | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10    | 12.991       | Core-i9-13900K                                               | 38.76 |
-| TC17<br />TC16                        | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
-| iPhone 14 Pro Max<br />iPhone15,3[^3] | Apple A16 Bionic[^2]                           | arm64e  | Darwin 23.4.0 | 15.962       |                                                              |       |
-| TC19                                  | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64   | Windows 10    | 20.534       | Core-i7-9700K                                                | 9.45  |
-| Dell Precision 3561                   | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64   | Windows       | 23.852       | Core-i7-11800H                                               | 13.47 |
-| TC07                                  | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64   | Windows       | 26.723       | Core-i7-9700K                                                | 9.45  |
-| oracle cloudshell                     | ARM Cortex-A53                                 | aarch64 | Linux         | 27.489       |                                                              |       |
-| AWS `t2.micro`                        | Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz      | x86_64  | Linux         | 27.785       | [Core-i7-9700K](https://technical.city/en/cpu/Core-i7-9700K) | 8.81  |
-| google cloudshell                     | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64  | Linux         | 29.818       |                                                              |       |
-| WUYING: 8 vCPU / 16 GiB Linux         | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64  | Linux         | 33.572       | [Xeon-Platinum-8163](https://versus.com/en/intel-xeon-gold-6126-vs-intel-xeon-platinum-8168) |       |
-| TC03<br />TC11                        | Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz      | AMD64   | Window        | 34.612       | Xeon-Gold-6248R                                              | 23.26 |
-| 2018 Macbook pro                      | Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz       | x86_64  | Darwin 22.1.0 | 37.105       | [Core-i7-8559U](https://technical.city/en/cpu/Core-i7-8559U) | 5.38  |
-| JVM                                   | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | x86_64  | Linux         | 38.685       | [Xeon-Gold-6126](https://technical.city/en/cpu/Xeon-Gold-6126) | 12.21 |
-| TC01                                  | Intel(R) Xeon(R) CPU E5-2643 v4 @ 3.40GHz      | AMD64   | Windows       | 39.258       | Xeon-E5-2643-v4                                              | 7.62  |
-| Jquant                                | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64  | Linux         | 40.128       | Xeon-Platinum-8163                                           |       |
-| google colab free tier                | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64  | Linux         | 43.078       |                                                              |       |
-| aws cloudshell                        | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64  | Linux         | 49.396       |                                                              |       |
-| JVM                                   | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64   | Windows       | 62.969       |                                                              |       |
-| serv00-FreeBSD                        | Intel(R) Xeon(R) Silver 4214R CPU @ 2.40GHz    | AMD64   | Linux         | 75.571       |                                                              |       |
-| Oracle 1G-1G-0.5Gbps                  | AMD EPYC 7551 32-Core Processor                | x86_64  | Linux         | 98.732       | EPYC-7551                                                    | 14.67 |
-| mini PC                               | Intel(R) Atom(TM) x5-Z8350 CPU @ 1.44GHz       | x86_64  | Linux         | 135.107      | Atom-x5-Z8350                                                | 0.57  |
+| Nickname                                                     | CPU                                            | Arch    | OS            | Benchmarking | Comb                                                         | Score |
+| ------------------------------------------------------------ | ---------------------------------------------- | ------- | ------------- | ------------ | ------------------------------------------------------------ | ----- |
+| TC14                                                         | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10    | 12.991       | Core-i9-13900K                                               | 38.76 |
+| TC17<br />TC16                                               | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows       | 15.654       | Core-i9-14900KF                                              | 39.25 |
+| iPhone 14 Pro Max<br />iPhone15,3[^3]                        | Apple A16 Bionic[^2]                           | arm64e  | Darwin 23.4.0 | 15.962       |                                                              |       |
+| TC19                                                         | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | sAMD64  | Windows 10    | 20.534       | Core-i7-9700K                                                | 9.45  |
+| Dell Precision 3561                                          | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64   | Windows       | 23.852       | Core-i7-11800H                                               | 13.47 |
+| github codespaces                                            | AMD EPYC 7763 64-Core Processor                | x86_64  | Linux         | 24.259       | [EPYC-7763](https://technical.city/en/cpu/EPYC-7763)         | 54.65 |
+| TC07                                                         | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | AMD64   | Windows       | 26.723       | Core-i7-9700K                                                | 9.45  |
+| oracle cloudshell                                            | ARM Cortex-A53                                 | aarch64 | Linux         | 27.489       |                                                              |       |
+| AWS `t2.micro`                                               | Intel(R) Xeon(R) CPU E5-2676 v3 @ 2.40GHz      | x86_64  | Linux         | 27.785       | [Core-i7-9700K](https://technical.city/en/cpu/Core-i7-9700K) | 8.81  |
+| google cloudshell                                            | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64  | Linux         | 29.818       |                                                              |       |
+| WUYING: 8 vCPU / 16 GiB Linux                                | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64  | Linux         | 33.572       | [Xeon-Platinum-8163](https://versus.com/en/intel-xeon-gold-6126-vs-intel-xeon-platinum-8168) |       |
+| TC03<br />TC11                                               | Intel(R) Xeon(R) Gold 6248R CPU @ 3.00GHz      | AMD64   | Window        | 34.612       | Xeon-Gold-6248R                                              | 23.26 |
+| 2018 Macbook pro                                             | Intel(R) Core(TM) i7-8559U CPU @ 2.70GHz       | x86_64  | Darwin 22.1.0 | 37.105       | [Core-i7-8559U](https://technical.city/en/cpu/Core-i7-8559U) | 5.38  |
+| JVM                                                          | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | x86_64  | Linux         | 38.685       | [Xeon-Gold-6126](https://technical.city/en/cpu/Xeon-Gold-6126) | 12.21 |
+| TC01                                                         | Intel(R) Xeon(R) CPU E5-2643 v4 @ 3.40GHz      | AMD64   | Windows       | 39.258       | Xeon-E5-2643-v4                                              | 7.62  |
+| Jquant                                                       | Intel(R) Xeon(R) Platinum 8163 CPU @ 2.50GHz   | x86_64  | Linux         | 40.128       | Xeon-Platinum-8163                                           |       |
+| google colab free tier                                       | Intel(R) Xeon(R) CPU @ 2.20GHz                 | x86_64  | Linux         | 43.078       |                                                              |       |
+| aws cloudshell                                               | Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz | x86_64  | Linux         | 49.396       |                                                              |       |
+| JVM                                                          | Intel(R) Xeon(R) Gold 6126 CPU @ 2.60GHz       | AMD64   | Windows       | 62.969       |                                                              |       |
+| [binder-examples/conda](https://github.com/binder-examples/conda)[^4] | Intel(R) Xeon(R) Gold 6140 CPU @ 2.30GHz       | x86_64  | Linux         | 74.349       | [Xeon-Gold-6140](https://technical.city/en/cpu/Xeon-Gold-6140) | 15.8  |
+| serv00-FreeBSD                                               | Intel(R) Xeon(R) Silver 4214R CPU @ 2.40GHz    | AMD64   | Linux         | 75.571       |                                                              |       |
+| Oracle 1G-1G-0.5Gbps                                         | AMD EPYC 7551 32-Core Processor                | x86_64  | Linux         | 98.732       | EPYC-7551                                                    | 14.67 |
+| mini PC                                                      | Intel(R) Atom(TM) x5-Z8350 CPU @ 1.44GHz       | x86_64  | Linux         | 135.107      | Atom-x5-Z8350                                                | 0.57  |
 
 * Note
   * Kinds of Arch explanation[^1] 
+
 
 ### GPU collection
 
@@ -140,9 +144,10 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 
 ## Feature in develop
-1. Streaming upload server in Python extended from [uploadserver](https://github.com/Densaugeo/uploadserver).
-2. work through [ws](https://websockets.readthedocs.io/en/stable/intro/index.html), transfer file using `websocket`
-3. [py-ios-device](https://github.com/YueChen-C/py-ios-device) python based Apple instruments protocol，you can get CPU, Memory and other metrics from real iOS devices
+
+1. work through [ws](https://websockets.readthedocs.io/en/stable/intro/index.html), transfer file using `websocket`
+2. [py-ios-device](https://github.com/YueChen-C/py-ios-device) python based Apple instruments protocol，you can get CPU, Memory and 
+* [x] Streaming upload server in Python extended from [uploadserver](https://github.com/Densaugeo/uploadserver).other metrics from real iOS devices
 
 
 
@@ -159,5 +164,4 @@ Performance source
 [^2]: [Apple A16](https://en.wikipedia.org/wiki/Apple_A16) 
 [^3]: [apple ios devices name](https://www.innerfence.com/howto/apple-ios-devices-dates-versions-instruction-sets)
 
-
-
+[^4]: binder: [Get your own copy of this repository](https://mybinder.readthedocs.io/en/latest/introduction.html)
