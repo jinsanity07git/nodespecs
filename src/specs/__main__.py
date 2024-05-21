@@ -27,6 +27,8 @@ def main():
             bench_cpu()
         elif args.utility == "upload":
             from .communicate import stream_files
+            from . import whoish
+            whoish()
             stream_files()
 
 

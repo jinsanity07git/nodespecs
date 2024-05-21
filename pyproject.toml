@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nodespecs"
-version = "0.0.19"
+version = "0.0.20"
 description = "The specs summarize utilities for computer instance"
 readme = "README.md"
 classifiers = [ "License :: OSI Approved :: MIT License", "Programming Language :: Python", "Programming Language :: Python :: 3",]

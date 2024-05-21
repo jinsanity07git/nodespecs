@@ -69,7 +69,7 @@ def stream_files():
     from unittest.mock import patch
 
     uploadserver.receive_upload = receive_streaming_upload
-    args_list = ['8000', '--cgi', '--allow-replace', '--bind', '127.0.0.1', '--directory', './', '--theme', 'dark']
+    args_list = ['8000', '--cgi', '--allow-replace', '--bind', '0.0.0.0', '--directory', './', '--theme', 'dark']
     try: 
         with patch.object(sys, 'argv', ['__main__.py'] + args_list):
             uploadserver.main()
