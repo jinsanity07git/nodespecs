@@ -1,9 +1,8 @@
 import socket
 import os
 
-def server(save_path = './'):
+def server(save_path='./'):
     # Ensure the directory for saving files exists
-    
     os.makedirs(save_path, exist_ok=True)
 
     # Creating a dummy socket to find the local IP address
@@ -21,20 +20,37 @@ def server(save_path = './'):
         client_socket, addr = server_socket.accept()
         print('Connection from', addr)
 
-        # Receiving the file name
-        file_name = client_socket.recv(1024).decode()
-        full_path = os.path.join(save_path, file_name)
-
-        # Receiving the file content
-        with open(full_path, 'wb') as f:
+        try:
             while True:
-                data = client_socket.recv(1024)
-                if not data:
+                # Receive the file name size
+                file_name_size = client_socket.recv(4)
+                if not file_name_size:
                     break
-                f.write(data)
+                file_name_size = int.from_bytes(file_name_size, 'big')
 
-        print(f"File {file_name} has been received and saved.")
-        client_socket.close()
+                # Receive the file name
+                file_name = client_socket.recv(file_name_size).decode()
+                full_path = os.path.join(save_path, file_name)
+
+                # Receive the file size
+                file_size = client_socket.recv(8)
+                file_size = int.from_bytes(file_size, 'big')
+
+                # Receive the file content
+                with open(full_path, 'wb') as f:
+                    received = 0
+                    while received < file_size:
+                        data = client_socket.recv(1024)
+                        if not data:
+                            break
+                        f.write(data)
+                        received += len(data)
+
+                print(f"File {file_name} has been received and saved.")
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            client_socket.close()
 
 
 # Uncomment to run the server
@@ -53,25 +69,24 @@ def check_prg():
         subprocess.check_call([sys.executable, "-m", "pip", "install", missing_module])
         return False
 
-
-def client(server_ip, server_port, file_path,prg = False):
-    # Create socket
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((server_ip, server_port))
-
+def send_file(client_socket, file_path, prg=False):
     # Send the file name
     file_name = os.path.basename(file_path)
+    file_name_size = len(file_name).to_bytes(4, 'big')
+    client_socket.sendall(file_name_size)
     client_socket.sendall(file_name.encode())
 
-    # Send the file content
+    # Send the file size
     file_size = os.path.getsize(file_path)
+    client_socket.sendall(file_size.to_bytes(8, 'big'))
 
+    # Send the file content
     prgenv = not prg
     while not prgenv:
         prgenv = check_prg()
     if prgenv & prg:
         from tqdm import tqdm
-        tqdm_progress = tqdm(total=file_size, unit='B', unit_scale=True, desc='Sending')
+        tqdm_progress = tqdm(total=file_size, unit='B', unit_scale=True, desc=f'Sending {file_name}')
 
     with open(file_path, 'rb') as f:
         while True:
@@ -82,8 +97,36 @@ def client(server_ip, server_port, file_path,prg = False):
             if prg: tqdm_progress.update(len(data))
     
     if prg: tqdm_progress.close()
-    print("File has been sent.")
-    client_socket.close()
+    print(f"File {file_name:<35} has been sent.")
 
-# Example usage:
-# client('192.168.1.2', 12345, 'path_to_your_file.txt')
+def client(server_ip, server_port, file_path="./README.md", prg=False):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((server_ip, server_port))
+    try:
+        send_file(client_socket, file_path, prg)
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
+    return None
+
+def clientd(server_ip, server_port, parentdir="./", prg=True):
+    """
+    client upload top level files in the cwd
+    """
+    # Create socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((server_ip, server_port))
+
+    try:
+        for chiddir, foldernames, files in os.walk(parentdir):
+            if chiddir == parentdir:
+                for file in files:
+                    file_path = os.path.join(chiddir, file)
+                    # print(f"***Preparing*** {file_path}")
+                    send_file(client_socket, file_path, prg)
+                    # print(f"***Done*** {file_path}")
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        client_socket.close()
