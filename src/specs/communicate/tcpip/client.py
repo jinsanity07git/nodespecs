@@ -17,9 +17,9 @@ def check_prg():
 def send_file(client_socket, file_path, prg=False):
     # Send the file name
     file_name = os.path.basename(file_path)
-    file_name_size = len(file_name).to_bytes(4, 'big')
+    file_name_size = len(file_name.encode('utf-8')).to_bytes(4, 'big')
     client_socket.sendall(file_name_size)
-    client_socket.sendall(file_name.encode())
+    client_socket.sendall(file_name.encode('utf-8'))
 
     # Send the file size
     file_size = os.path.getsize(file_path)

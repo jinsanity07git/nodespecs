@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: nodespecs
-Version: 0.0.21
+Version: 0.0.22
 Summary: The specs summarize utilities for computer instance
 Author-email: jinsanity <jinsanityff@gmail.com>
 License: The MIT License (MIT)
@@ -50,6 +50,8 @@ python -m specs -u="upload"
 
 ```shell
 ## server
+python -c "import specs; specs.__version__"
+
 python -c "import specs; specs.whoish()"
 python -c "import specs; specs.server()"
 ## client upload wt progress bar

@@ -48,7 +48,7 @@ def server(save_path='./'):
                     file_name_size = int.from_bytes(file_name_size, 'big')
 
                     # Receive the file name
-                    file_name = client_socket.recv(file_name_size).decode()
+                    file_name = client_socket.recv(file_name_size).decode('utf-8')
                     full_path = os.path.join(save_path, file_name)
 
                     # Receive the file size

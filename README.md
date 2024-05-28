@@ -22,6 +22,8 @@ python -m specs -u="upload"
 
 ```shell
 ## server
+python -c "import specs; specs.__version__"
+
 python -c "import specs; specs.whoish()"
 python -c "import specs; specs.server()"
 ## client upload wt progress bar
