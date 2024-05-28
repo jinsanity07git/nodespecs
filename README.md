@@ -32,6 +32,7 @@ python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)
 ## client upload wo progress bar
 python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)"
 ## client upload top level files in the cwd
+python -c "import specs; specs.clientd('192.168.0.157')"
 python -c "import specs; specs.clientd('192.168.0.157', 12345)"
 ```
 

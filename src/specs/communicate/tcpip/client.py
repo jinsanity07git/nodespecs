@@ -44,7 +44,7 @@ def send_file(client_socket, file_path, prg=False):
     if prg: tqdm_progress.close()
     print(f"File {file_name:<35} has been sent.")
 
-def client(server_ip, server_port, file_path="./README.md", prg=False):
+def client(server_ip, server_port=12345, file_path="./README.md", prg=False):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((server_ip, server_port))
     try:
@@ -55,7 +55,7 @@ def client(server_ip, server_port, file_path="./README.md", prg=False):
         client_socket.close()
     return None
 
-def clientd(server_ip, server_port, parentdir="./", prg=True):
+def clientd(server_ip, server_port=12345, parentdir="./", prg=True):
     """
     client upload top level files in the cwd
     """
