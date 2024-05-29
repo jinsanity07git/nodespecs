@@ -12,6 +12,15 @@ def handle_signal(sig, frame):
         server_socket.close()
     sys.exit(0)
 
+def recv_all(sock, length):
+    data = b''
+    while len(data) < length:
+        more = sock.recv(length - len(data))
+        if not more:
+            raise EOFError('Socket closed before receiving all data')
+        data += more
+    return data
+
 def server(save_path='./'):
     global server_socket
     
@@ -42,18 +51,17 @@ def server(save_path='./'):
             try:
                 while True:
                     # Receive the file name size
-                    file_name_size = client_socket.recv(4)
-                    if not file_name_size:
-                        break
-                    file_name_size = int.from_bytes(file_name_size, 'big')
+                    file_name_size_data = recv_all(client_socket, 4)
+                    file_name_size = int.from_bytes(file_name_size_data, 'big')
 
                     # Receive the file name
-                    file_name = client_socket.recv(file_name_size).decode('utf-8')
+                    file_name_data = recv_all(client_socket, file_name_size)
+                    file_name = file_name_data.decode('utf-8')
                     full_path = os.path.join(save_path, file_name)
 
                     # Receive the file size
-                    file_size = client_socket.recv(8)
-                    file_size = int.from_bytes(file_size, 'big')
+                    file_size_data = recv_all(client_socket, 8)
+                    file_size = int.from_bytes(file_size_data, 'big')
 
                     # Receive the file content
                     with open(full_path, 'wb') as f:
