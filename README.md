@@ -18,11 +18,13 @@ python -m specs -l=1
 
 python -m specs -u="bcpu"
 python -m specs -u="upload"
+python -m specs -u="server"
+python -m specs -u="cld" -i='172.25.1.228'
 ```
 
 ```shell
 ## server
-python -c "import specs; specs.__version__"
+python -c "import specs; print(specs.__version__)"
 
 python -c "import specs; specs.whoish()"
 python -c "import specs; specs.server()"

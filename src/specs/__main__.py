@@ -6,6 +6,7 @@ def main():
     parser = argparse.ArgumentParser(description="Display hardware information")
     parser.add_argument('-l','--lite',default=0, help='Display native python platform')
     parser.add_argument('-u','--utility',default=None, help='run benchmark for single core CPU')
+    parser.add_argument('-i','--iphost',default=None, help='hosthame of the server machine')
 
     args = parser.parse_args()
     if args.utility is None:
@@ -30,6 +31,13 @@ def main():
             from . import whoish
             whoish()
             stream_files()
+        elif args.utility == "server":
+            from . import server
+            server()
+        elif args.utility == "cld":
+            from . import clientd
+            if args.iphost is not None:
+                clientd(args.iphost)
 
 
 
