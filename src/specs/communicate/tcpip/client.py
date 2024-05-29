@@ -1,5 +1,6 @@
 import socket
 import os
+import time
 
 def check_prg():
     import sys
@@ -68,9 +69,10 @@ def clientd(server_ip, server_port=12345, parentdir="./", prg=True):
             if chiddir == parentdir:
                 for file in files:
                     file_path = os.path.join(chiddir, file)
-                    # print(f"***Preparing*** {file_path}")
+                    print(f"***Preparing*** {file_path}")
                     send_file(client_socket, file_path, prg)
-                    # print(f"***Done*** {file_path}")
+                    print(f"***Done*** {file_path}")
+                    time.sleep(2)
     except Exception as e:
         print(f"Error: {e}")
     finally:

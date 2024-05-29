@@ -62,7 +62,7 @@ def server(save_path='./'):
                     # Receive the file size
                     file_size_data = recv_all(client_socket, 8)
                     file_size = int.from_bytes(file_size_data, 'big')
-
+                    print(f"***receiving*** {file_name} - {file_size}")
                     # Receive the file content
                     with open(full_path, 'wb') as f:
                         received = 0
