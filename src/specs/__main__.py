@@ -4,6 +4,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="Display hardware information")
+    parser.add_argument('-v','--version',action='store_true', help='Display the version info')
     parser.add_argument('-l','--lite',default=0, help='Display native python platform')
     parser.add_argument('-u','--utility',default=None, help='run benchmark for single core CPU')
     parser.add_argument('-i','--iphost',default=None, help='hosthame of the server machine')
@@ -13,6 +14,9 @@ def main():
         if (args.lite == "1") or (args.lite == "True") :
             from . import info_plat
             info_plat()
+        elif args.version:
+            from . import __version__
+            print(__version__)
         else:
             from .hardware import (info_cpu,
                                    info_mem,

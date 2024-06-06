@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: nodespecs
-Version: 0.0.26
+Version: 0.1.0
 Summary: The specs summarize utilities for computer instance
 Author-email: jinsanity <jinsanityff@gmail.com>
 License: The MIT License (MIT)
@@ -42,17 +42,18 @@ python -c "import specs; specs.info_gpu()"
 
 ```shell
 # for the machine not compatible with psutil
+python -m specs -v
 python -m specs -l=1
 
 python -m specs -u="bcpu"
 python -m specs -u="upload"
 python -m specs -u="server"
-python -m specs -u="cld" -ip='172.25.1.228'
+python -m specs -u="cld" -i='172.25.1.228'
 ```
 
 ```shell
 ## server
-python -c "import specs; specs.__version__"
+python -c "import specs; print(specs.__version__)"
 
 python -c "import specs; specs.whoish()"
 python -c "import specs; specs.server()"
