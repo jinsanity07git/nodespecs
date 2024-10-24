@@ -204,10 +204,11 @@ if __name__ == "__main__":
     indexer = FileIndexer()
 
     # Index a directory
-    indexed_count = indexer.index_directory(r"C:/Projects")  # Use raw string for Windows paths
+    dir = r"F:\\"
+    indexed_count = indexer.index_directory(dir)  # Use raw string for Windows paths
     print(f"Indexed {indexed_count} files")
 
-    success, error = indexer.export_to_sqlite("file_index.db")
+    success, error = indexer.export_to_sqlite(f"{dir}file_index.db")
     if success:
         print("Successfully exported to SQLite database")
     else:
