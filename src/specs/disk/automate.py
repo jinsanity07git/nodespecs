@@ -1,14 +1,30 @@
 import os
 import shutil
 
+def resolve_path():
+    username = os.getlogin() 
+    if os.name == 'nt':  # Windows
+        path = f"C:/Users/{username}/Downloads"
+    elif os.name == 'posix':  # MacOS/Linux
+        home_dir = os.path.expanduser('~')
+        path = f"{home_dir}/Downloads"
+    else:
+        raise OSError("Unsupported operating system")
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"The path {path} does not exist")
+        
+    return path
+
+
 def organize_folder(folder):
     print (folder)
     file_types = {
         'Images': ['.jpeg', '.jpg', '.png', '.gif'],
         'Videos': ['.mp4', '.avi', '.mov'],
-        'Documents': ['.pdf', '.docx', '.txt','.html'],
+        'Documents': ['.pdf', '.docx', '.txt','.html','.xlsx'],
         'Develops': ['.csv', '.py', '.json','.log',".vr"],
-        'Installer': ['.exe','.msi','.application'],
+        'Installer': ['.exe','.msi','.application','.ps1'],
         'Archives': ['.zip', '.rar']
     }
 
@@ -23,5 +39,5 @@ def organize_folder(folder):
                     shutil.move(file_path, os.path.join(target_folder, filename))
                     print(f'- Moved {filename:<40} to {folder_name:<40}')
 if __name__ == "__main__":
-    username = os.getlogin()
-    organize_folder(f"C:/Users/{username}/Downloads")
+    furl=resolve_path()
+    organize_folder(furl)
