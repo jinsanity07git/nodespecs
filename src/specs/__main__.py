@@ -30,6 +30,10 @@ def main():
         if args.utility == "bcpu":
             from . import bench_cpu
             bench_cpu()
+        elif args.utility == "fclean":
+            from .disk import organize_folder,resolve_path
+            furl=resolve_path()
+            organize_folder(furl)
         elif args.utility == "upload":
             from .communicate import stream_files
             from . import whoish
