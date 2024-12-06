@@ -10,9 +10,14 @@ pip install nodespecs
 python -m specs
 python -c "import specs; specs.bench_cpu()"
 python -c "import specs; specs.info_gpu()"
+python -c "from specs import disk;print(disk.resolve_path())"
+python -c "from specs.disk import resolve_path;print(resolve_path())"
 ```
 
 ```shell
+# clean and orgnized download folder for WINDOWS user
+python -m specs -u="fclean"
+
 # for the machine not compatible with psutil
 python -m specs -v
 python -m specs -l=1
@@ -38,6 +43,7 @@ python -c "import specs; specs.client('172.25.1.175', 12345,'./README.md',False)
 python -c "import specs; specs.clientd('192.168.0.157')"
 python -c "import specs; specs.clientd('192.168.0.157', 12345)"
 ```
+
 
 ```
 sudo apt update
