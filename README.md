@@ -92,6 +92,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 | TC14                                                         | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10     |         | 12.991       | Core-i9-13900K                                               | 38.76 |
 | TC17<br />TC16                                               | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows        |         | 15.654       | Core-i9-14900KF                                              | 39.25 |
 | iPhone 14 Pro Max<br />iPhone15,3[^3]                        | Apple A16 Bionic[^2]                           | arm64e  | Darwin 23.4.0  |         | 15.962       |                                                              |       |
+| 10cent CloudStudio                                           | Intel(R) Xeon(R) Platinum 8255C CPU @ 2.50GHz  | x86_64  | Linux          | 3.10.11 | 19.891       |                                                              |       |
 | TC19                                                         | Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz       | sAMD64  | Windows 10     |         | 20.534       | Core-i7-9700K                                                | 9.45  |
 | Dell Precision 5690                                          | Intel(R) Core(TM) Ultra 9 185H                 | AMD64   | Windows 11 Pro | 3.8.12  | 23.824       |                                                              |       |
 | Dell Precision 3561                                          | 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz | AMD64   | Windows        |         | 23.852       | Core-i7-11800H                                               | 13.47 |
@@ -121,13 +122,13 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 ### GPU collection
 
-| id    | name                                      | total memory | Synthetic benchmark | CUDA API |
-| ----- | ----------------------------------------- | ------------ | ------------------- | -------- |
-| 17    | NVIDIA GeForce RTX 4060                   | 8188.0MB     | 50.69               | NA       |
-| colab | Tesla T4                                  | 15360.0MB    | 28.16               | 70627    |
-| 5690  | NVIDIA RTX 3500 Ada Generation Laptop GPU | 12282 MB     |                     |          |
-| dell  | NVIDIA T600 Laptop GPU                    | 4096.0MB     | 16.69               | 26600    |
-| 01    | Quadro M4000                              | 8192.0MB     | 17.27               | 16648    |
+| id                             | name                                      | total memory | Synthetic benchmark | CUDA API |
+| ------------------------------ | ----------------------------------------- | ------------ | ------------------- | -------- |
+| 17                             | NVIDIA GeForce RTX 4060                   | 8188.0MB     | 50.69               | NA       |
+| colab <br />10cent CloudStudio | Tesla T4                                  | 15360.0MB    | 28.16               | 70627    |
+| 5690                           | NVIDIA RTX 3500 Ada Generation Laptop GPU | 12282 MB     |                     |          |
+| dell                           | NVIDIA T600 Laptop GPU                    | 4096.0MB     | 16.69               | 26600    |
+| 01                             | Quadro M4000                              | 8192.0MB     | 17.27               | 16648    |
 
 
 
