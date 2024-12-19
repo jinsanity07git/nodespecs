@@ -20,12 +20,14 @@ def resolve_path():
 def organize_folder(folder):
     print (folder)
     file_types = {
-        'Images': ['.jpeg', '.jpg', '.png', '.gif'],
+        'Images': ['.jpeg', '.jpg', '.png', '.gif','.ico','.svg','.webp'],
+        'Audio': ['.mp3', '.wav', '.flac', '.aac'],
         'Videos': ['.mp4', '.avi', '.mov'],
-        'Documents': ['.pdf', '.docx', '.txt','.html','.xlsx'],
-        'Develops': ['.csv', '.py', '.json','.log',".vr"],
+        'Documents': ['.pdf', '.docx', '.txt','.html','.xlsx',
+                      ".mobi",".epub"],
+        'Develops': ['.csv', '.py', '.json','.log',".vr",'.bin','.ipynb'],
         'Installer': ['.exe','.msi','.application','.ps1'],
-        'Archives': ['.zip', '.rar']
+        'Archives': ['.zip', '.rar','.tar.gz' ,'.7z'],
     }
 
     for filename in os.listdir(folder):
