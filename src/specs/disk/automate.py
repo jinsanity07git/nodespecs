@@ -16,6 +16,18 @@ def resolve_path():
         
     return path
 
+def list_files_and_dirs(root_dir="./",separator=' '):
+    """
+    List all files and directories in the given directory tree.
+    """
+
+    for root, dirs, files in os.walk(root_dir):
+        level = root.replace(root_dir, '').count(os.sep)
+        indent = separator * 4 * level
+        print(f'{indent}{os.path.basename(root)}/')
+        sub_indent = separator * 4 * (level + 1)
+        for f in files:
+            print(f'{sub_indent}{f}')
 
 def organize_folder(folder):
     print (folder)
@@ -41,5 +53,6 @@ def organize_folder(folder):
                     shutil.move(file_path, os.path.join(target_folder, filename))
                     print(f'- Moved {filename:<40} to {folder_name:<40}')
 if __name__ == "__main__":
-    furl=resolve_path()
-    organize_folder(furl)
+    # furl=resolve_path()
+    # organize_folder(furl)
+    list_files_and_dirs()
