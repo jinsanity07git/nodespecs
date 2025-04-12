@@ -11,7 +11,7 @@ name: Upload Python Package
 on:
   release:
     types: [published]
-
+  workflow_dispatch:  # Add this to enable manual triggering
 permissions:
   contents: read
 
@@ -28,10 +28,7 @@ jobs:
 
       - name: Build release distributions
         run: |
-          # NOTE: put your own distribution build steps here.
-          python -m pip install build
-          python -m build
-          
+          # NOTE: put your own distribution build steps here.          
           python -m pip install --upgrade pip-tools
           pip install twine
           pip-compile.exe pyproject.toml
