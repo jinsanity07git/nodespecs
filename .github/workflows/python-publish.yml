@@ -26,13 +26,22 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Build release distributions
+
+      - name: Install dependencies
         run: |
-          # NOTE: put your own distribution build steps here.          
-          python -m pip install --upgrade pip-tools
-          pip install twine
-          pip-compile.exe pyproject.toml
+          python -m pip install --upgrade pip build pip-tools twine
+
+          
+      - name: Build package
+        run: |
+          pip-compile pyproject.toml
           python -m build
+      
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
           twine upload dist/*
           
 
