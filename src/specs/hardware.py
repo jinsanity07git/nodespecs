@@ -92,7 +92,14 @@ def get_system_info():
       storage_info.append(f"{partition.device} ({partition.fstype}): {round(usage.total / (1024**3), 2)}GB")
     except:
       pass
-      
+  cpu_count = psutil.cpu_count(logical=True)
+  
+  print(f"vCPUs : {cpu_count}")
+  print(f"Memory: {memory_gb} GB")
+  print("Storage:")
+  for info in storage_info:
+    print(f"***  {info}")
+
   return cpu_count, memory_gb, storage_info
 
 @ensure_lib('psutil')

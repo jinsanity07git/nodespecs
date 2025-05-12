@@ -9,6 +9,8 @@ Extracting and Fetching all system and hardware information such as os details, 
 pip install nodespecs
 python -m specs
 python -c "import specs; specs.bench_cpu()"
+python -c "import specs; specs.hardware.get_system_info()"
+
 python -c "import specs; specs.info_gpu()"
 python -c "from specs import disk;print(disk.resolve_path())"
 python -c "from specs.disk import resolve_path;print(resolve_path())"
