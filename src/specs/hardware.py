@@ -97,8 +97,18 @@ def get_system_info():
   print(f"vCPUs : {cpu_count}")
   print(f"Memory: {memory_gb} GB")
   print("Storage:")
+  unique_devices = {}
+  total_storage = 0
   for info in storage_info:
-    print(f"***  {info}")
+      device = info.split()[0]  # Get device name
+      if device not in unique_devices:
+          unique_devices[device] = info
+          # Extract the storage number (GB) from the info string
+          storage_gb = float(info.split()[-1].replace('GB', ''))
+          total_storage += storage_gb
+  for info in unique_devices.values():
+      print(f"***  {info}")
+  print(f"Total Storage: {total_storage:.2f} GB")
 
   return cpu_count, memory_gb, storage_info
 
