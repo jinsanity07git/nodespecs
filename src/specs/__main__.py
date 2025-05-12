@@ -18,10 +18,12 @@ def main():
             from . import __version__
             print(__version__)
         else:
-            from .hardware import (info_cpu,
+            from .hardware import (get_system_info,
+                                   info_cpu,
                                    info_mem,
                                    info_disk,
                                    info_net)
+            get_system_info()
             info_cpu()
             info_mem()
             info_disk()

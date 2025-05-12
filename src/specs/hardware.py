@@ -80,6 +80,22 @@ def info_sys():
     print(f"Processor: {uname.processor}")
 
 @ensure_lib('psutil')
+def get_system_info():
+  cpu_count = psutil.cpu_count(logical=True)
+  memory_gb = round(psutil.virtual_memory().total / (1024**3), 2)
+  
+  # Get storage information
+  storage_info = []
+  for partition in psutil.disk_partitions():
+    try:
+      usage = psutil.disk_usage(partition.mountpoint)
+      storage_info.append(f"{partition.device} ({partition.fstype}): {round(usage.total / (1024**3), 2)}GB")
+    except:
+      pass
+      
+  return cpu_count, memory_gb, storage_info
+
+@ensure_lib('psutil')
 def boot_time():
     # Boot Time
     print("="*40, "Boot Time", "="*40)

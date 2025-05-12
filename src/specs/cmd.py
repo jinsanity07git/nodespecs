@@ -22,5 +22,10 @@ keymap = {
         "macOS"   :  "",
         "windows" :  ""
      },
+     "Meminfo" : {
+        "Linux"   :  "cat /proc/meminfo", 
+        "macOS"   :  "",
+        "windows" :  ""
+     },
 }
 
