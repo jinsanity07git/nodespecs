@@ -91,6 +91,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 | Nickname                                                     | CPU                                            | Arch    | OS             | Python  | Benchmarking | Comb                                                         | Score |
 | ------------------------------------------------------------ | ---------------------------------------------- | ------- | -------------- | ------- | ------------ | ------------------------------------------------------------ | ----- |
+| lab-aws                                                      | Intel(R) Xeon(R) Platinum 8488C                | x86_64  | Linux          | 3.11.12 | 11.174       |                                                              | 38.76 |
 | TC14                                                         | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10     |         | 12.991       | Core-i9-13900K                                               | 38.76 |
 | TC17<br />TC16                                               | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows        |         | 15.654       | Core-i9-14900KF                                              | 39.25 |
 | iPhone 14 Pro Max<br />iPhone15,3[^3]                        | Apple A16 Bionic[^2]                           | arm64e  | Darwin 23.4.0  |         | 15.962       |                                                              |       |
