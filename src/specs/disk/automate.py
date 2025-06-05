@@ -1,7 +1,11 @@
 import os
+from pathlib import Path
 import shutil
 
 def resolve_path():
+    """
+    resolve path to the Downloads folder 
+    """
     username = os.getlogin() 
     if os.name == 'nt':  # Windows
         path = f"C:/Users/{username}/Downloads"
@@ -15,6 +19,19 @@ def resolve_path():
         raise FileNotFoundError(f"The path {path} does not exist")
         
     return path
+
+def resolve_target_url(sepdir, relurl):
+    """
+    Generates the target URL based on a working directory --sepdir 
+    and the provided relative URL --relurl.
+    """
+    target_path = Path(Path(os.getcwd().split(sepdir)[0]), 
+                                      Path(f"{sepdir}/{relurl}"))
+    if target_path.parent.exists():  
+        return target_path.as_posix()
+    else:
+        raise FileNotFoundError(f"Directory does not exist: {target_path.parent}")
+
 
 def list_files_and_dirs(root_dir="./",separator=' '):
     """
