@@ -32,6 +32,43 @@ def resolve_target_url(sepdir, relurl):
     else:
         raise FileNotFoundError(f"Directory does not exist: {target_path.parent}")
 
+import importlib.util
+from pathlib import Path
+from typing import Any, Dict
+
+def load_module_from_path(module_name: str, file_path: Path) -> Any:
+    """
+    Dynamically load a Python module from a file path.
+    Aviod going deep through the __init__ process
+    
+    Args:
+        module_name: Name to assign to the loaded module
+        file_path: Path to the Python file to load
+        
+    Returns:
+        The loaded module object
+        
+    Raises:
+        FileNotFoundError: If the module file doesn't exist
+        ImportError: If the module cannot be loaded or executed
+    """
+    if not file_path.exists():
+        raise FileNotFoundError(f"Module file not found: {file_path}")
+    
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Cannot create module spec for {file_path}")
+            
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+        
+    except Exception as e:
+        raise ImportError(f"Failed to load module {module_name} from {file_path}: {e}")
+
+
+
 
 def list_files_and_dirs(root_dir="./",separator=' '):
     """
