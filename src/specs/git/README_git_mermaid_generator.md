@@ -5,6 +5,7 @@ A Python script that automatically generates mermaid gitGraph visualizations fro
 ## Features
 
 - **Configurable base tag**: Specify any git tag as the starting point for analysis
+- **Repository directory**: Analyze any git repository by specifying its path
 - **Branch filtering**: Exclude specific branches from the visualization
 - **Automatic analysis**: Analyzes commit history, merge patterns, and branch relationships
 - **Rich visualization**: Generates mermaid gitGraph with proper branch structure and merge flows
@@ -21,11 +22,17 @@ A Python script that automatically generates mermaid gitGraph visualizations fro
 ### Basic Usage
 
 ```bash
-# Generate visualization since v1.1.1 (default)
+# Generate visualization since v1.1.1 (default) for current directory
 python git_mermaid_generator.py
+
+# Specify a different repository directory
+python git_mermaid_generator.py --repo-dir "C:\Projects\tdm23_sr"
 
 # Specify a different tag
 python git_mermaid_generator.py --tag v1.0.0
+
+# Analyze a specific repository with custom tag
+python git_mermaid_generator.py --repo-dir "C:\Projects\my-project" --tag v2.0.0
 
 # Exclude specific branches
 python git_mermaid_generator.py --exclude-branches "refs/stash,origin/HEAD,feature-branch"
@@ -37,6 +44,7 @@ python git_mermaid_generator.py --output my_git_graph.md
 ### Command Line Options
 
 - `--tag TAG`: Git tag to use as starting point (default: `v1.1.1`)
+- `--repo-dir DIR`: Path to git repository directory (default: current directory)
 - `--exclude-branches BRANCHES`: Comma-separated list of branch patterns to exclude
 - `--output OUTPUT`: Output filename (default: `git_commits_since_<tag>.md`)
 - `--help`: Show help message
@@ -47,11 +55,17 @@ python git_mermaid_generator.py --output my_git_graph.md
 # Analyze commits since v2.0.0, excluding stash and specific feature branches
 python git_mermaid_generator.py --tag v2.0.0 --exclude-branches "refs/stash,origin/HEAD,old-feature"
 
-# Generate with custom output file
+# Analyze a specific repository with custom settings
+python git_mermaid_generator.py --repo-dir "C:\Projects\tdm23_sr" --tag v1.0.0 --output tdm23_history.md
+
+# Generate with custom output file for current directory
 python git_mermaid_generator.py --tag v1.1.1 --output project_history.md
 
-# Minimal exclusions
-python git_mermaid_generator.py --exclude-branches "refs/stash"
+# Analyze remote repository directory with minimal exclusions
+python git_mermaid_generator.py --repo-dir "/path/to/project" --exclude-branches "refs/stash"
+
+# Full example with all parameters
+python git_mermaid_generator.py --repo-dir "C:\Projects\my-app" --tag v1.2.0 --exclude-branches "refs/stash,origin/HEAD,temp-branch" --output my_app_analysis.md
 ```
 
 ## Output
@@ -189,6 +203,42 @@ git tag --list
 # Use an existing tag
 python git_mermaid_generator.py --tag your-existing-tag
 ```
+
+**Repository Directory Issues**
+```
+Error: Repository directory does not exist: C:\Projects\nonexistent
+Error: Repository path is not a directory: C:\Projects\file.txt
+Error: Directory 'C:\Projects\not-a-repo' is not a valid git repository
+```
+
+**Solutions**:
+1. **Verify the directory exists and is accessible:**
+   ```bash
+   # Check if directory exists
+   dir "C:\Projects\tdm23_sr"
+   
+   # Navigate to verify it's a git repository
+   cd "C:\Projects\tdm23_sr"
+   git status
+   ```
+
+2. **Use absolute paths on Windows:**
+   ```bash
+   # Use quotes for paths with spaces
+   python git_mermaid_generator.py --repo-dir "C:\Projects\My Project"
+   
+   # Use forward slashes or escaped backslashes
+   python git_mermaid_generator.py --repo-dir "C:/Projects/tdm23_sr"
+   ```
+
+3. **Initialize git repository if needed:**
+   ```bash
+   cd "C:\Projects\your-project"
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git tag v1.0.0
+   ```
 
 ## Customization
 

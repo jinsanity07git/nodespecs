@@ -8,7 +8,8 @@ a comprehensive visualization.
 
 Usage:
     python git_mermaid_generator.py --tag v1.1.1 --exclude-branches "refs/stash,origin/HEAD"
-    python git_mermaid_generator.py  # Uses defaults: tag=v1.1.1, no excluded branches
+    python git_mermaid_generator.py --repo-dir "C:\Projects\tdm23_sr" --tag v1.0.0
+    python git_mermaid_generator.py  # Uses defaults: tag=v1.1.1, current directory
 """
 
 import subprocess
@@ -20,19 +21,28 @@ import os
 
 
 class GitMermaidGenerator:
-    def __init__(self, base_tag: str = "v1.1.1", exclude_branches: Optional[List[str]] = None):
+    def __init__(self, base_tag: str = "v1.1.1", exclude_branches: Optional[List[str]] = None, repo_dir: Optional[str] = None):
         """
         Initialize the Git Mermaid Generator.
         
         Args:
             base_tag: The git tag to use as the starting point for commit analysis
             exclude_branches: List of branch patterns to exclude from analysis
+            repo_dir: Path to the git repository directory (default: current directory)
         """
         self.base_tag = base_tag
         self.exclude_branches = exclude_branches or []
+        self.repo_dir = repo_dir or os.getcwd()
         self.commits = []
         self.branches = []
         self.merge_commits = {}
+        
+        # Validate that the directory exists and is a git repository
+        if not os.path.exists(self.repo_dir):
+            raise ValueError(f"Repository directory does not exist: {self.repo_dir}")
+        
+        if not os.path.isdir(self.repo_dir):
+            raise ValueError(f"Repository path is not a directory: {self.repo_dir}")
         
     def run_git_command(self, command: List[str]) -> str:
         """Execute a git command and return the output."""
@@ -42,15 +52,23 @@ class GitMermaidGenerator:
                 capture_output=True,
                 text=True,
                 check=True,
-                cwd=os.getcwd(),
+                cwd=self.repo_dir,
                 encoding='utf-8',
                 errors='replace'
             )
             return result.stdout.strip() if result.stdout else ""
         except subprocess.CalledProcessError as e:
-            print(f"Git command failed: {' '.join(command)}")
+            print(f"Git command failed in {self.repo_dir}: {' '.join(command)}")
             print(f"Error: {e.stderr if e.stderr else 'Unknown error'}")
             raise
+    
+    def verify_git_repository(self) -> bool:
+        """Verify that the directory is a valid git repository."""
+        try:
+            self.run_git_command(["git", "rev-parse", "--git-dir"])
+            return True
+        except subprocess.CalledProcessError:
+            return False
     
     def verify_tag_exists(self) -> bool:
         """Verify that the specified tag exists in the repository."""
@@ -174,6 +192,9 @@ class GitMermaidGenerator:
     
     def generate_mermaid_graph(self) -> str:
         """Generate the mermaid gitGraph visualization."""
+        if not self.verify_git_repository():
+            raise ValueError(f"Directory '{self.repo_dir}' is not a valid git repository")
+        
         if not self.verify_tag_exists():
             raise ValueError(f"Tag '{self.base_tag}' does not exist in the repository")
         
@@ -358,7 +379,7 @@ def main():
         description='Generate mermaid gitGraph visualization from git commits since a specified tag'
     )
     parser.add_argument(
-        '--tag', 
+        '--tag',
         default='v1.1.1',
         help='Git tag to use as starting point (default: v1.1.1)'
     )
@@ -369,6 +390,10 @@ def main():
     parser.add_argument(
         '--output',
         help='Output filename (default: git_commits_since_<tag>.md)'
+    )
+    parser.add_argument(
+        '--repo-dir',
+        help='Path to git repository directory (default: current directory)'
     )
     
     args = parser.parse_args()
@@ -384,7 +409,8 @@ def main():
     try:
         generator = GitMermaidGenerator(
             base_tag=args.tag,
-            exclude_branches=exclude_branches
+            exclude_branches=exclude_branches,
+            repo_dir=args.repo_dir
         )
         
         filename = generator.save_to_file(args.output)
@@ -392,6 +418,7 @@ def main():
         
         # Print some basic stats
         print(f"\nAnalysis Summary:")
+        print(f"- Repository: {generator.repo_dir}")
         print(f"- Base tag: {args.tag}")
         print(f"- Total commits analyzed: {len(generator.commits)}")
         print(f"- Active branches: {len(generator.branches)}")
