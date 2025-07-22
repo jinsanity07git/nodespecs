@@ -119,6 +119,77 @@ The script includes robust error handling for:
 - Unicode encoding issues in commit messages
 - Git command failures
 
+## Troubleshooting
+
+### Git Command Not Found Error
+
+If you encounter the error `[WinError 2] The system cannot find the file specified` when running the script, it means Git is not accessible from the command line.
+
+#### Diagnosing the Issue
+
+1. **Check if Git is installed and accessible:**
+   ```bash
+   git --version
+   ```
+   
+   If this fails with "git is not recognized", Git is either not installed or not in your PATH.
+
+2. **Check if Git is installed but not in PATH (Windows):**
+   ```bash
+   # Check common installation location
+   dir "C:\Program Files\Git\bin\git.exe"
+   
+   # Test with full path
+   & "C:\Program Files\Git\bin\git.exe" --version
+   ```
+
+#### Solutions
+
+**Option 1: Add Git to PATH (Temporary - Current Session Only)**
+```powershell
+# Add Git to PATH for current PowerShell session
+$env:PATH += ";C:\Program Files\Git\bin"
+
+# Verify it works
+git --version
+```
+
+**Option 2: Install Git for Windows (Permanent Solution)**
+1. Download Git for Windows from: https://git-scm.com/download/win
+2. Run the installer and follow the setup wizard
+3. **Important**: Select "Git from the command line and also from 3rd-party software" during installation
+4. Restart your terminal/PowerShell after installation
+
+**Option 3: Add Git to System PATH (Permanent Solution)**
+1. Open System Properties → Advanced → Environment Variables
+2. Edit the System PATH variable
+3. Add `C:\Program Files\Git\bin` to the PATH
+4. Restart your terminal/PowerShell
+
+#### Verification
+
+After applying any solution, verify Git is accessible:
+```bash
+git --version
+python git_mermaid_generator.py --help
+```
+
+### Other Common Issues
+
+**Tag Does Not Exist Error**
+```
+Error: Tag 'v1.1.1' does not exist in the repository
+```
+
+**Solution**: Check available tags and use an existing one:
+```bash
+# List all tags
+git tag --list
+
+# Use an existing tag
+python git_mermaid_generator.py --tag your-existing-tag
+```
+
 ## Customization
 
 The script can be easily extended to:
