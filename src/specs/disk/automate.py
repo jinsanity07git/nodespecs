@@ -2,18 +2,12 @@ import os
 from pathlib import Path
 import shutil
 
-def resolve_path():
+def resolve_user_path(folder='Downloads'):
     """
     resolve path to the Downloads folder 
     """
-    username = os.getlogin() 
-    if os.name == 'nt':  # Windows
-        path = f"C:/Users/{username}/Downloads"
-    elif os.name == 'posix':  # MacOS/Linux
-        home_dir = os.path.expanduser('~')
-        path = f"{home_dir}/Downloads"
-    else:
-        raise OSError("Unsupported operating system")
+    home_dir = os.path.expanduser('~')
+    path = os.path.join(home_dir,folder )
 
     if not os.path.exists(path):
         raise FileNotFoundError(f"The path {path} does not exist")
