@@ -2,7 +2,23 @@
 Extracting and Fetching all system and hardware information such as os details, CPU and GPU information, disk and network usage in Python using platform, psutil and gputil libraries.
 
 
+### install with UV
+```shell
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
+uv python install 3.12
 
+uv init
+uv add nodespecs
+uv pip install psutil
+uv run -m specs
+uv run -m specs -u="bcpu"
+
+# or
+source .venv/bin/activate
+python specs -u="bcpu"
+
+```
 ### install and use with pip
 
 ```shell
@@ -91,6 +107,7 @@ git clone https://github.com/jinsanity07git/hardwareSummary && python3 hardwareS
 
 | Nickname                                                     | CPU                                            | Arch    | OS             | Python  | Benchmarking | Comb                                                         | Score |
 | ------------------------------------------------------------ | ---------------------------------------------- | ------- | -------------- | ------- | ------------ | ------------------------------------------------------------ | ----- |
+| TC01                                                         | Intel(R) Core(TM) i9-14900K                    | x86_64  | Linux 5.15.153.1-microsoft-standard-WSL2 | 3.12.12 | 5.43                            | Core-i9-14900KF | 39.25 |
 | lab-aws                                                      | Intel(R) Xeon(R) Platinum 8488C                | x86_64  | Linux          | 3.11.12 | 11.174       |                                                              | 38.76 |
 | TC14                                                         | 13th Gen Intel(R) Core(TM) i9-13900K           | AMD64   | Windows 10     |         | 12.991       | Core-i9-13900K                                               | 38.76 |
 | TC17<br />TC16                                               | Intel(R) Core(TM) i9-14900KF                   | AMD64   | Windows        |         | 15.654       | Core-i9-14900KF                                              | 39.25 |
