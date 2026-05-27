@@ -3,6 +3,8 @@ import os
 import signal
 import sys
 
+from .protocol import recv_all, receive_file_header
+
 # Global variable to track the server socket
 server_socket = None
 
@@ -11,15 +13,6 @@ def handle_signal(sig, frame):
     if server_socket:
         server_socket.close()
     sys.exit(0)
-
-def recv_all(sock, length):
-    data = b''
-    while len(data) < length:
-        more = sock.recv(length - len(data))
-        if not more:
-            raise EOFError('Socket closed before receiving all data')
-        data += more
-    return data
 
 def server(save_path='./'):
     global server_socket
@@ -50,18 +43,8 @@ def server(save_path='./'):
 
             try:
                 while True:
-                    # Receive the file name size
-                    file_name_size_data = recv_all(client_socket, 4)
-                    file_name_size = int.from_bytes(file_name_size_data, 'big')
-
-                    # Receive the file name
-                    file_name_data = recv_all(client_socket, file_name_size)
-                    file_name = file_name_data.decode('utf-8')
+                    file_name, file_size = receive_file_header(client_socket)
                     full_path = os.path.join(save_path, file_name)
-
-                    # Receive the file size
-                    file_size_data = recv_all(client_socket, 8)
-                    file_size = int.from_bytes(file_size_data, 'big')
                     print(f"***receiving*** {file_name:<40} - {file_size:<10}")
                     # Receive the file content
                     with open(full_path, 'wb') as f:

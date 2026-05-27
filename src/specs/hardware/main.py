@@ -2,9 +2,10 @@
 # https://www.thepythoncode.com/article/get-hardware-system-information-python
 #
 
-from .hardware.main import (boot_time, check_gpu, get_system_info, info_cpu, info_disk,
-                            info_gpu, info_mem, info_net, info_sys)
-from .hardware.deps import ensure_lib, ensure_libs
+import platform
+from datetime import datetime
+
+from .deps import ensure_lib
 
 
 def get_size(bytes, suffix="B"):
@@ -20,8 +21,9 @@ def get_size(bytes, suffix="B"):
             return f"{bytes:.2f}{unit}{suffix}"
         bytes /= factor
 
+
 def info_sys():
-    print("="*40, "System Information", "="*40)
+    print("=" * 40, "System Information", "=" * 40)
     uname = platform.uname()
     print(f"System: {uname.system}")
     print(f"Node Name: {uname.node}")
@@ -30,53 +32,59 @@ def info_sys():
     print(f"Machine: {uname.machine}")
     print(f"Processor: {uname.processor}")
 
-@ensure_lib('psutil')
+
+@ensure_lib("psutil")
 def get_system_info():
-  cpu_count = psutil.cpu_count(logical=True)
-  memory_gb = round(psutil.virtual_memory().total / (1024**3), 2)
-  
-  # Get storage information
-  storage_info = []
-  for partition in psutil.disk_partitions():
-    try:
-      usage = psutil.disk_usage(partition.mountpoint)
-      storage_info.append(f"{partition.device} ({partition.fstype}): {round(usage.total / (1024**3), 2)}GB")
-    except:
-      pass
-  cpu_count = psutil.cpu_count(logical=True)
-  
-  print(f"vCPUs : {cpu_count}")
-  print(f"Memory: {memory_gb} GB")
-  print("Storage:")
-  unique_devices = {}
-  total_storage = 0
-  for info in storage_info:
-      device = info.split()[0]  # Get device name
-      if device not in unique_devices:
-          unique_devices[device] = info
-          # Extract the storage number (GB) from the info string
-          storage_gb = float(info.split()[-1].replace('GB', ''))
-          total_storage += storage_gb
-  for info in unique_devices.values():
-      print(f"***  {info}")
-  print(f"Total Storage: {total_storage:.2f} GB")
+    cpu_count = psutil.cpu_count(logical=True)
+    memory_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
 
-  return cpu_count, memory_gb, storage_info
+    # Get storage information
+    storage_info = []
+    for partition in psutil.disk_partitions():
+        try:
+            usage = psutil.disk_usage(partition.mountpoint)
+            storage_info.append(
+                f"{partition.device} ({partition.fstype}): {round(usage.total / (1024 ** 3), 2)}GB"
+            )
+        except Exception:
+            pass
+    cpu_count = psutil.cpu_count(logical=True)
 
-@ensure_lib('psutil')
+    print(f"vCPUs : {cpu_count}")
+    print(f"Memory: {memory_gb} GB")
+    print("Storage:")
+    unique_devices = {}
+    total_storage = 0
+    for info in storage_info:
+        device = info.split()[0]  # Get device name
+        if device not in unique_devices:
+            unique_devices[device] = info
+            # Extract the storage number (GB) from the info string
+            storage_gb = float(info.split()[-1].replace("GB", ""))
+            total_storage += storage_gb
+    for info in unique_devices.values():
+        print(f"***  {info}")
+    print(f"Total Storage: {total_storage:.2f} GB")
+
+    return cpu_count, memory_gb, storage_info
+
+
+@ensure_lib("psutil")
 def boot_time():
     # Boot Time
-    print("="*40, "Boot Time", "="*40)
+    print("=" * 40, "Boot Time", "=" * 40)
     boot_time_timestamp = psutil.boot_time()
     bt = datetime.fromtimestamp(boot_time_timestamp)
     print(f"Boot Time: {bt.year}/{bt.month}/{bt.day} {bt.hour}:{bt.minute}:{bt.second}")
 
-@ensure_lib('psutil')
+
+@ensure_lib("psutil")
 def info_cpu():
     # let's print CPU information
-    print("="*40, "CPU Info", "="*40)
-    from . import cpuinfo
-    print('CPU: ' + cpuinfo.get_cpu_info().get('brand_raw', "Unknown"))
+    print("=" * 40, "CPU Info", "=" * 40)
+    from .. import cpuinfo
+
+    print("CPU: " + cpuinfo.get_cpu_info().get("brand_raw", "Unknown"))
     # number of cores
     print("Physical cores:", psutil.cpu_count(logical=False))
     print("Total cores:", psutil.cpu_count(logical=True))
@@ -94,17 +102,18 @@ def info_cpu():
     except FileNotFoundError:
         pass
 
-@ensure_lib('psutil')
+
+@ensure_lib("psutil")
 def info_mem():
     # Memory Information
-    print("="*40, "Memory Information", "="*40)
+    print("=" * 40, "Memory Information", "=" * 40)
     # get the memory details
     svmem = psutil.virtual_memory()
     print(f"Total: {get_size(svmem.total)}")
     print(f"Available: {get_size(svmem.available)}")
     print(f"Used: {get_size(svmem.used)}")
     print(f"Percentage: {svmem.percent}%")
-    print("="*20, "SWAP", "="*20)
+    print("=" * 20, "SWAP", "=" * 20)
     # get the swap memory details (if exists)
     swap = psutil.swap_memory()
     print(f"Total: {get_size(swap.total)}")
@@ -112,9 +121,10 @@ def info_mem():
     print(f"Used: {get_size(swap.used)}")
     print(f"Percentage: {swap.percent}%")
 
+
 def info_disk():
     # Disk Information
-    print("="*40, "Disk Information", "="*40)
+    print("=" * 40, "Disk Information", "=" * 40)
     print("Partitions and Usage:")
     # get all disk partitions
     partitions = psutil.disk_partitions()
@@ -137,20 +147,21 @@ def info_disk():
     print(f"Total read: {get_size(disk_io.read_bytes)}")
     print(f"Total write: {get_size(disk_io.write_bytes)}")
 
-@ensure_lib('psutil')
+
+@ensure_lib("psutil")
 def info_net():
     # Network information
-    print("="*40, "Network Information", "="*40)
+    print("=" * 40, "Network Information", "=" * 40)
     # get all network interfaces (virtual and physical)
     if_addrs = psutil.net_if_addrs()
     for interface_name, interface_addresses in if_addrs.items():
         for address in interface_addresses:
             print(f"=== Interface: {interface_name} ===")
-            if str(address.family) == 'AddressFamily.AF_INET':
+            if str(address.family) == "AddressFamily.AF_INET":
                 print(f"  IP Address: {address.address}")
                 print(f"  Netmask: {address.netmask}")
                 print(f"  Broadcast IP: {address.broadcast}")
-            elif str(address.family) == 'AddressFamily.AF_PACKET':
+            elif str(address.family) == "AddressFamily.AF_PACKET":
                 print(f"  MAC Address: {address.address}")
                 print(f"  Netmask: {address.netmask}")
                 print(f"  Broadcast MAC: {address.broadcast}")
@@ -159,9 +170,11 @@ def info_net():
     print(f"Total Bytes Sent: {get_size(net_io.bytes_sent)}")
     print(f"Total Bytes Received: {get_size(net_io.bytes_recv)}")
 
+
 def check_gpu():
     import sys
     import subprocess
+
     try:
         import GPUtil
         from tabulate import tabulate
@@ -173,6 +186,7 @@ def check_gpu():
         subprocess.check_call([sys.executable, "-m", "pip", "install", missing_module])
         return False
 
+
 def info_gpu():
     gpuenv = False
     while not gpuenv:
@@ -181,7 +195,8 @@ def info_gpu():
     if gpuenv:
         import GPUtil
         from tabulate import tabulate
-        print("="*40, "GPU Details", "="*40)
+
+        print("=" * 40, "GPU Details", "=" * 40)
         gpus = GPUtil.getGPUs()
         list_gpus = []
         for gpu in gpus:
@@ -190,7 +205,7 @@ def info_gpu():
             # name of GPU
             gpu_name = gpu.name
             # get % percentage of GPU usage of that GPU
-            gpu_load = f"{gpu.load*100}%"
+            gpu_load = f"{gpu.load * 100}%"
             # get free memory in MB format
             gpu_free_memory = f"{gpu.memoryFree}MB"
             # get used memory
@@ -200,14 +215,35 @@ def info_gpu():
             # get GPU temperature in Celsius
             gpu_temperature = f"{gpu.temperature} °C"
             gpu_uuid = gpu.uuid
-            list_gpus.append((
-                gpu_id, gpu_name, gpu_load, gpu_free_memory, gpu_used_memory,
-                gpu_total_memory, gpu_temperature, gpu_uuid
-            ))
+            list_gpus.append(
+                (
+                    gpu_id,
+                    gpu_name,
+                    gpu_load,
+                    gpu_free_memory,
+                    gpu_used_memory,
+                    gpu_total_memory,
+                    gpu_temperature,
+                    gpu_uuid,
+                )
+            )
 
-        print(tabulate(list_gpus, headers=("id", "name", "load", "free memory", "used memory", "total memory",
-                                        "temperature", "uuid")))
-        
+        print(
+            tabulate(
+                list_gpus,
+                headers=(
+                    "id",
+                    "name",
+                    "load",
+                    "free memory",
+                    "used memory",
+                    "total memory",
+                    "temperature",
+                    "uuid",
+                ),
+            )
+        )
+
 
 if __name__ == "__main__":
     boot_time()
