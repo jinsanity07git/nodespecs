@@ -46,6 +46,45 @@ python -m specs -u="server"
 python -m specs -u="cld" -i='172.25.1.228'
 ```
 
+### File Indexer Script
+
+##### Usage
+
+Run the script as a module from the repository root:
+
+```shell
+python -m specs.disk.drive
+```
+
+To index a custom directory, pass `--dir` with a Windows raw path literal:
+
+```shell
+python -m specs.disk.drive --dir "F:\\"
+```
+
+To set the SQLite output path explicitly:
+
+```shell
+python -m specs.disk.drive --dir "F:\\" --db "F:\\file_index.db"
+```
+
+##### Expected Output
+
+On success:
+
+```
+Indexed <N> files
+Successfully exported to SQLite database: <path>\file_index.db
+```
+
+On failure to export:
+
+```
+Indexed <N> files
+Export failed: <error message>
+```
+
+
 ```shell
 ## server
 python -c "import specs; print(specs.__version__)"

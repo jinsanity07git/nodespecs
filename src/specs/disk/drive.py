@@ -1,8 +1,10 @@
+import argparse
 import os
 import re
+import sys
 from pathlib import Path
 from datetime import datetime
-from typing import List, Union, Tuple, Dict,Optional
+from typing import List, Union, Tuple, Dict, Optional
 from collections import defaultdict
 
 class FileIndexer:
@@ -198,21 +200,51 @@ class FileIndexer:
             return False, f"SQLite error: {str(e)}"
         except Exception as e:
             return False, f"Unexpected error: {str(e)}"
-# Example usage
-if __name__ == "__main__":
-    # Initialize the indexer
-    indexer = FileIndexer()
+DEFAULT_ROOT_DIR = r"F:\\"
 
-    # Index a directory
-    dir = r"F:\\"
-    indexed_count = indexer.index_directory(dir)  # Use raw string for Windows paths
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Index a directory and export results to a SQLite database."
+    )
+    parser.add_argument(
+        "--dir",
+        dest="root_dir",
+        default=DEFAULT_ROOT_DIR,
+        help=(
+            "Root directory to index. Default is a raw Windows path literal: "
+            f"{DEFAULT_ROOT_DIR}"
+        ),
+    )
+    parser.add_argument(
+        "--db",
+        dest="db_path",
+        default=None,
+        help="Optional SQLite database file path. Defaults to <dir>/file_index.db",
+    )
+    args = parser.parse_args()
+
+    root_dir = Path(args.root_dir)
+    if not root_dir.exists() or not root_dir.is_dir():
+        print(f"Directory does not exist: {root_dir}", file=sys.stderr)
+        return 2
+
+    indexer = FileIndexer()
+    indexed_count = indexer.index_directory(str(root_dir))
     print(f"Indexed {indexed_count} files")
 
-    success, error = indexer.export_to_sqlite(f"{dir}file_index.db")
+    db_path = Path(args.db_path) if args.db_path else root_dir / "file_index.db"
+    success, error = indexer.export_to_sqlite(str(db_path))
     if success:
-        print("Successfully exported to SQLite database")
-    else:
-        print(f"Export failed: {error}")
+        print(f"Successfully exported to SQLite database: {db_path}")
+        return 0
+
+    print(f"Export failed: {error}", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
     
     # from pprint import pprint
     # pprint(indexer.files)
