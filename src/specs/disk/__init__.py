@@ -1,4 +1,4 @@
-from .automate import (resolve_path,
+from .automate import (resolve_user_path,
                        organize_folder,
                        resolve_target_url,
                        load_module_from_path)
