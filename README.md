@@ -12,11 +12,11 @@ uv init
 uv add nodespecs
 uv pip install psutil
 uv run -m specs
-uv run -m specs -u="bcpu"
+uv run -m specs bcpu
 
 # or
 source .venv/bin/activate
-python specs -u="bcpu"
+python -m specs bcpu
 
 ```
 ### install and use with pip
@@ -28,22 +28,22 @@ python -c "import specs; specs.bench_cpu()"
 python -c "import specs; specs.hardware.get_system_info()"
 
 python -c "import specs; specs.info_gpu()"
-python -c "from specs import disk;print(disk.resolve_path())"
-python -c "from specs.disk import resolve_path;print(resolve_path())"
+python -c "from specs import disk;print(disk.resolve_user_path())"
+python -c "from specs.disk import resolve_user_path;print(resolve_user_path())"
 ```
 
 ```shell
 # clean and orgnized download folder for WINDOWS user
-python -m specs -u="fclean"
+python -m specs fclean
 
 # for the machine not compatible with psutil
 python -m specs -v
 python -m specs -l=1
 
-python -m specs -u="bcpu"
-python -m specs -u="upload"
-python -m specs -u="server"
-python -m specs -u="cld" -i='172.25.1.228'
+python -m specs bcpu
+python -m specs upload
+python -m specs server
+python -m specs cld -i='172.25.1.228'
 ```
 
 ### File Indexer Script
