@@ -21,29 +21,71 @@ def parse_dep(module_name):
 def check_imp(module_name):
     import sys
     import subprocess
+    import shutil
+    from pathlib import Path
     try:
         module, version = parse_dep(module_name)
+        importlib.invalidate_caches()
         globals()[module] = importlib.import_module(module)
         return True
     except ModuleNotFoundError as e:
+        def find_workspace_root_with_venv(start_path: Path):
+            for parent in [start_path] + list(start_path.parents):
+                if (parent / ".venv").is_dir():
+                    return parent
+            return None
+
         # Extract the name of the missing module
-        missing_module = str(e).split("'")[1]
-        print(f"Attempting to install missing module: {missing_module}")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", missing_module])
+        missing_module = e.name or module_name
+        install_target = module_name if missing_module == module and version else missing_module
+
+        workspace_root = find_workspace_root_with_venv(Path(__file__).resolve())
+        uv_path = shutil.which("uv")
+
+        if uv_path and workspace_root:
+            print(f"Attempting to add missing module via uv: {install_target}")
+            try:
+                subprocess.check_call([uv_path, "add", install_target], cwd=str(workspace_root))
+                return False
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                print("uv add failed, attempting uv pip install")
+
+            try:
+                subprocess.check_call([uv_path, "pip", "install", install_target], cwd=str(workspace_root))
+                return False
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                print("uv pip install failed, falling back to pip")
+
+        print(f"Attempting to install missing module: {install_target}")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", install_target])
         return False
 
 
 def ensure_lib(module_name):
+    module, _ = parse_dep(module_name)
+
     def decorator(func):
         def wrapper(*args, **kwargs):
-            if module_name not in globals():
-                check_imp(module_name)
-                try:
-                    globals()[module_name] = importlib.import_module(module_name)
-                except ImportError:
-                    raise ImportError(f"Module {module_name} is required but not installed.")
+            if module in globals():
+                return func(*args, **kwargs)
+
+            import sys
+            import importlib.util
+
+            importlib.invalidate_caches()
+
+            loaded_module = sys.modules.get(module)
+            if loaded_module is None:
+                spec = importlib.util.find_spec(module)
+                if spec is None:
+                    raise ImportError(f"Module {module} is required but not installed.")
+                loaded_module = importlib.import_module(module)
+
+            globals()[module] = loaded_module
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 def ensure_libs(modules):
