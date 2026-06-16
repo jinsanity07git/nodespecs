@@ -7,6 +7,32 @@ from pathlib import Path
 from typing import Optional, MutableMapping
 
 
+# Stdlib-removed / stdlib-internal names that must never be pip-installed.
+# - `distutils` was removed from the standard library in Python 3.12; it is
+#   not on PyPI and any `pip install distutils` attempt will fail with a
+#   misleading dependency-resolution error (see issue #5).
+# - Names starting with an underscore are CPython-internal and not packages.
+# Forward-looking: the blocklist is consulted both at decoration time (so a
+# stray `@ensure_lib("distutils")` fails loudly) and at install time inside
+# `check_imp` (so a transitive `ModuleNotFoundError` for these names cannot
+# trigger a doomed `pip install`).
+_NON_PACKAGE_NAMES = frozenset({"distutils"})
+
+
+def _is_blocked_module(name: str) -> bool:
+    """Return True if `name` is a stdlib-removed or CPython-internal name
+    that should never be pip-installed."""
+    return name in _NON_PACKAGE_NAMES or name.startswith("_")
+
+
+def _raise_blocked(module: str) -> None:
+    raise ImportError(
+        f"Module {module!r} is not an installable package; "
+        "it has been removed from the Python standard library or is "
+        "CPython-internal. Install a third-party replacement instead."
+    )
+
+
 def parse_dep(module_name):
     sep = "=="
     if sep in module_name:
@@ -40,6 +66,8 @@ def _load_module(module: str):
 
 def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]] = None):
     module, version = parse_dep(module_name)
+    if _is_blocked_module(module):
+        _raise_blocked(module)
     missing_module = module
 
     try:
@@ -47,6 +75,12 @@ def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]]
     except ModuleNotFoundError as e:
         loaded_module = None
         missing_module = e.name or module
+
+    # If the transitive import blew up on a stdlib-removed name, do not try
+    # to pip-install that name either (see issue #5: GPUtil 1.4.0 →
+    # `from distutils import spawn` on Python 3.12).
+    if loaded_module is None and _is_blocked_module(missing_module):
+        _raise_blocked(missing_module)
 
     if loaded_module is not None:
         if target_globals is not None:
@@ -80,6 +114,8 @@ def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]]
 
 def ensure_lib(module_name):
     module, _ = parse_dep(module_name)
+    if _is_blocked_module(module):
+        _raise_blocked(module)
 
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -104,6 +140,13 @@ def ensure_lib(module_name):
 
 
 def ensure_libs(modules):
+    # Validate every requested module name at decoration time so a typo
+    # (`@ensure_libs(["distutils"])`) fails loudly rather than silently.
+    for module_name in modules:
+        module, _ = parse_dep(module_name)
+        if _is_blocked_module(module):
+            _raise_blocked(module)
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             target_globals = func.__globals__
