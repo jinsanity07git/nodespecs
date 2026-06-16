@@ -1,5 +1,18 @@
 # hardwareSummary
-Extracting and Fetching all system and hardware information such as os details, CPU and GPU information, disk and network usage in Python using platform, psutil and gputil libraries.
+
+[![PyPI version](https://img.shields.io/pypi/v/nodespecs)](https://pypi.org/project/nodespecs/)
+[![Python](https://img.shields.io/pypi/pyversions/nodespecs)](https://pypi.org/project/nodespecs/#files)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/jinsanity07git/nodespecs/blob/main/LICENSE)
+[![CI](https://github.com/jinsanity07git/nodespecs/actions/workflows/ci.yml/badge.svg)](https://github.com/jinsanity07git/nodespecs/actions/workflows/ci.yml)
+
+A Swiss Army Knife library for system, hardware, and filesystem utilities. Reports OS / CPU / GPU / memory / disk / network, runs a CPU benchmark, organizes a downloads folder, indexes a filesystem to SQLite, generates a Mermaid `gitGraph`, and ships a streaming upload server plus a custom TCP file-transfer client/server. **Python 3.6+**, single runtime dependency (`tabulate`), heavy deps lazy-installed on first use.
+
+```shell
+pip install nodespecs
+python -m specs                      # full system report
+python -m specs bcpu                 # CPU benchmark
+python -c "import specs; specs.info_gpu()"
+```
 
 
 ### install with UV
