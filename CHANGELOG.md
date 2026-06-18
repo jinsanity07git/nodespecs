@@ -6,6 +6,43 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-18
+
+### Added
+- `FileIndexer` now captures `st_blocks`, `st_nlink`, `st_ino`, and
+  `st_dev` per file, and reports a deduped `on_disk_size` (sum of
+  `st_blocks * 512` over distinct inodes) alongside the existing
+  `total_size`. This is the field that most closely matches what the
+  OS reports as "used space" for a file walk; it accounts for cluster
+  rounding on NTFS / exFAT and for sparse files, and is not inflated
+  by hardlinks.
+- `get_statistics()` returns five new keys: `unique_files`,
+  `logical_size` (deduped), `on_disk_size` (deduped),
+  `hardlink_extra_paths` (paths beyond the first for each shared
+  inode), and `skipped_paths` (directory / entry access errors).
+- The SQLite export adds matching `on_disk`, `blocks`, `nlinks`,
+  `inode`, and `device` columns to the `files` table (plus indexes on
+  `(device, inode)` and `extension`) and the same five new rows to
+  the `statistics` table.
+- `tests/test_indexer.py`: stdlib `unittest` smoke tests covering the
+  new counts, hardlink dedup, the per-directory error path, and the
+  SQLite round-trip.
+
+### Changed
+- `FileIndexer.index_directory()` is now implemented with an explicit
+  `os.scandir` stack walker instead of `os.walk`. A `PermissionError`
+  on a single subdirectory no longer aborts the whole walk; the
+  affected entry is recorded in `skipped_paths` and the walk continues
+  with the rest of the tree. Symlink-following behavior is unchanged
+  (`follow_symlinks=False`).
+- `specs.disk.drive` (`python -m specs.disk.drive`): the `--dir`
+  default is now the current working directory on non-Windows hosts
+  (still `F:\\` on Windows, matching the legacy behavior). After a
+  successful index, the CLI prints a side-by-side comparison between
+  `on_disk_size` and `shutil.disk_usage(root_dir)` so the gap from
+  filesystem metadata, snapshots, and unread subtrees is visible
+  instead of hidden.
+
 ## [0.4.0] - 2026-06-16
 
 ### Added
@@ -127,7 +164,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Initial release. Hardware info (CPU, memory, disk, network), CPU
   benchmark, and downloads-folder organizer.
 
-[Unreleased]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.0...v0.3.1
