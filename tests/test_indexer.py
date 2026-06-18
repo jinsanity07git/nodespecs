@@ -167,5 +167,138 @@ class FileIndexerSqliteTests(unittest.TestCase):
                 self.assertIn(key, stat_keys)
 
 
+class FileIndexerWindowsStatTests(unittest.TestCase):
+    """On Windows ``st_blocks`` is ``None``; the indexer must not crash."""
+
+    def test_on_disk_bytes_falls_back_when_st_blocks_is_none(self):
+        from specs.disk.indexer import _on_disk_bytes
+
+        class _WindowsStat:
+            st_size = 1234
+            st_blocks = None  # what Windows returns
+
+        self.assertEqual(_on_disk_bytes(_WindowsStat()), 1234)
+
+    def test_on_disk_bytes_uses_blocks_when_available(self):
+        from specs.disk.indexer import _on_disk_bytes
+
+        class _PosixStat:
+            st_size = 100
+            st_blocks = 8  # 8 * 512 = 4096
+
+        self.assertEqual(_on_disk_bytes(_PosixStat()), 4096)
+
+
+class FileIndexerSecondCallTests(unittest.TestCase):
+    """A second ``index_directory`` must not retain the first call's records."""
+
+    def test_second_call_clears_previous_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write(root / "a.txt", b"x" * 100)
+            (root / "sub1").mkdir()
+            _write(root / "sub1" / "b.txt", b"y" * 200)
+            (root / "sub2").mkdir()
+            _write(root / "sub2" / "c.txt", b"z" * 300)
+            _write(root / "sub2" / "d.txt", b"w" * 400)
+
+            indexer = FileIndexer()
+            indexer.index_directory(str(root / "sub1"))
+            first = indexer.get_statistics()
+            self.assertEqual(first["total_files"], 1)
+
+            # Second call: only sub2's files should be present.
+            indexer.index_directory(str(root / "sub2"))
+            second = indexer.get_statistics()
+            self.assertEqual(second["total_files"], 2)
+            self.assertEqual(second["unique_files"], 2)
+            # The relationship must hold (would be negative on a leaky impl).
+            self.assertEqual(
+                second["hardlink_extra_paths"],
+                second["total_files"] - second["unique_files"],
+            )
+            self.assertGreaterEqual(second["hardlink_extra_paths"], 0)
+            # And self.files must only contain sub2 entries.
+            self.assertEqual(len(indexer.files), 2)
+            for path in indexer.files:
+                self.assertIn("sub2", path)
+
+
+class FileIndexerSymlinkTests(unittest.TestCase):
+    """Symlink-to-file must be recorded under the symlink's path."""
+
+    def test_symlink_to_file_recorded(self):
+        if not hasattr(os, "symlink"):
+            self.skipTest("os.symlink unavailable on this platform")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            target = root / "target.bin"
+            _write(target, b"x" * 64)
+            link = root / "link.bin"
+            try:
+                os.symlink(str(target), str(link))
+            except (OSError, NotImplementedError) as e:
+                self.skipTest(f"symlinks unsupported on this FS: {e}")
+
+            indexer = FileIndexer()
+            indexer.index_directory(str(root))
+            self.assertIn(
+                link.as_posix(),
+                indexer.files,
+                "symlink-to-file should be recorded under the link's path",
+            )
+            self.assertEqual(indexer.files[link.as_posix()]["size"], 64)
+
+
+class FileIndexerMigrationTests(unittest.TestCase):
+    """A pre-0.4.1 DB must be migrated in place by ``export_to_sqlite``."""
+
+    def test_legacy_schema_is_migrated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write(root / "a.txt", b"hello")
+            legacy_db = Path(tmp) / "legacy.db"
+            with sqlite3.connect(str(legacy_db)) as c:
+                c.execute(
+                    "CREATE TABLE files ("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    "filepath TEXT NOT NULL UNIQUE, "
+                    "filename TEXT NOT NULL, "
+                    "extension TEXT, "
+                    "size INTEGER, "
+                    "last_modified TIMESTAMP, "
+                    "indexed_at TIMESTAMP)"
+                )
+                c.execute(
+                    "CREATE TABLE statistics ("
+                    "key TEXT PRIMARY KEY, value TEXT)"
+                )
+                c.commit()
+
+            indexer = FileIndexer()
+            indexer.index_directory(str(root))
+            ok, err = indexer.export_to_sqlite(str(legacy_db))
+            self.assertTrue(ok, msg=err)
+
+            with sqlite3.connect(str(legacy_db)) as c:
+                cols = {
+                    r[1]
+                    for r in c.execute("PRAGMA table_info(files)").fetchall()
+                }
+            for col in ("on_disk", "blocks", "nlinks", "inode", "device"):
+                self.assertIn(col, cols, f"missing migrated column {col}")
+
+            # Re-running must be a no-op (idempotent migration).
+            ok2, err2 = indexer.export_to_sqlite(str(legacy_db))
+            self.assertTrue(ok2, msg=err2)
+            with sqlite3.connect(str(legacy_db)) as c:
+                row = c.execute(
+                    "SELECT size, on_disk, nlinks FROM files"
+                ).fetchone()
+            self.assertEqual(row[0], 5)        # size
+            self.assertGreaterEqual(row[1], 5) # on_disk (>= size; == size if blocks None)
+            self.assertGreaterEqual(row[2], 1) # nlinks
+
+
 if __name__ == "__main__":
     unittest.main()
