@@ -33,6 +33,23 @@ def _format_bytes(n: int) -> str:
     return f"{n:>14,}"
 
 
+def _is_volume_root(p: Path) -> bool:
+    """Return True if ``p`` is the mount root of its containing volume.
+
+    On POSIX, the only mount root is ``/``. On Windows, any drive
+    letter at its root (e.g. ``C:\\``) counts. Used to disambiguate
+    the comparison line in ``_print_comparison`` so the gap between
+    the indexer's on-disk size and ``shutil.disk_usage`` is attributed
+    correctly: when the indexed directory is a subtree, the gap is
+    mostly "files outside the indexed directory"; when it is the
+    volume root, the gap is filesystem metadata + unread subtrees.
+    """
+    if p == p.anchor:
+        return True
+    # Path.anchor on Windows is 'C:\\'; ``Path('C:\\').parent == Path('C:\\')``.
+    return p.parent == p
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -102,14 +119,31 @@ def _print_comparison(indexer: FileIndexer, root_dir: Path) -> None:
     except (OSError, AttributeError) as e:
         print(f"\n(could not read OS disk usage: {e})")
         return
-    print(f"\nOS-reported usage of {root_dir}:")
+    is_vol_root = _is_volume_root(root_dir)
+    if is_vol_root:
+        scope = f"OS-reported usage of {root_dir} (volume root):"
+    else:
+        scope = (
+            f"OS-reported usage of the volume containing {root_dir} "
+            "(indexer covers this subtree only):"
+        )
+    print(f"\n{scope}")
     print(f"  total:           {_format_bytes(du.total)} bytes")
     print(f"  used:            {_format_bytes(du.used)} bytes")
     print(f"  free:            {_format_bytes(du.free)} bytes")
     gap = du.used - stats["on_disk_size"]
+    if is_vol_root:
+        gap_label = (
+            "metadata, system files, unread subtrees, snapshots"
+        )
+    else:
+        gap_label = (
+            "includes every file outside the indexed subtree, plus "
+            "metadata, snapshots, etc."
+        )
     print(
-        f"  indexer - OS:    {_format_bytes(gap)} bytes  "
-        "(metadata, system files, unread subtrees, snapshots)"
+        f"  OS - indexer:    {_format_bytes(gap)} bytes  "
+        f"({gap_label})"
     )
 
 
