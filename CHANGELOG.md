@@ -26,6 +26,23 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - `.gitignore`: added `*.egg-info/`, `build/`, `dist/`-adjacent artifacts,
   and other common Python tool caches.
 - `__version__` bumped to `0.4.0`; `setup.py` syncs `pyproject.toml`.
+- `.github/workflows/python-publish.yml` overhauled:
+  - Renamed in spirit to `publish-and-deploy`; runs on `release: published`
+    and `workflow_dispatch`.
+  - Split into three jobs: `build` (sdist + wheel, uploads `dist/` as a
+    workflow artifact), `publish` (downloads the artifact, `twine upload` with
+    `PYPI_API_TOKEN`), and `deploy-update` (emits a GitHub Deployment object +
+    success status so any subscriber to deployment events — auto-update feeds,
+    dashboards, deploy bots — can react to a new PyPI release landing).
+  - Bumped action versions: `actions/checkout@v7`, `actions/setup-python@v6`,
+    `actions/upload-artifact@v7`, `actions/download-artifact@v7`,
+    `actions/github-script@v8`.
+  - Added `id-token: write` permission in the publish job in preparation for
+    a future switch to OIDC trusted publishing (no behavior change yet).
+  - Added `concurrency: publish-and-deploy` so a re-published release does not
+    trigger a second, racing publish job.
+  - The `pypi` environment can now carry required reviewers / wait-timer in
+    repo settings for a manual gate before the upload runs.
 
 ## [0.3.2] - 2025-12-18
 

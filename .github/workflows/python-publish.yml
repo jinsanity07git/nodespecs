@@ -1,33 +1,52 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+# Builds and publishes the package to PyPI when a GitHub release is published,
+# and emits a GitHub Deployment object so downstream systems (auto-update feeds,
+# status dashboards, deploy bots) can react to a new version landing.
+#
+# Triggers:
+#   - release: published  -> run both publish and deploy-update
+#   - workflow_dispatch   -> run publish only, for manual re-uploads / YANK replays
+#
+# PyPI auth uses the long-lived PYPI_API_TOKEN secret for now; switching to OIDC
+# trusted publishing is a one-time pypi.org setup step and is tracked separately.
+#
+# Required secrets / config:
+#   - PYPI_API_TOKEN      (PyPI upload token; treat as a project-level secret)
+#
+# Optional (only used by the deploy-update job):
+#   - DEPLOY_ENVIRONMENT  (default: "pypi")  name shown in the Deployment timeline
+#   - DEPLOY_REF_PREFIX   (default: "v")     strip this from the tag before logging
 
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Upload Python Package
+name: publish-and-deploy
 
 on:
   release:
     types: [published]
-  workflow_dispatch:  # Add this to enable manual triggering
+  # Add this to enable manual triggering
+  workflow_dispatch:
 
+# Publish jobs need write on contents (for tag ref) and id-token (reserved for
+# the future OIDC switch). The deploy-update job needs deployments: write.
 permissions:
   contents: read
 
-jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
+# Cancel any in-flight run of this same workflow on a new push/ref. Useful when
+# a release is re-published shortly after the first one.
+concurrency:
+  group: publish-and-deploy
+  cancel-in-progress: false
 
+jobs:
+  build:
+    name: build sdist + wheel
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Install build tooling
         run: |
@@ -38,16 +57,80 @@ jobs:
         run: |
           python -m build
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # The "pypi" environment is where the PYPI_API_TOKEN secret lives. The
+    # environment can be configured with required reviewers / wait-timer in
+    # the repo settings for an extra manual gate.
+    environment: pypi
+    permissions:
+      # twine upload only needs an API token; the broader workflow token is
+      # contents: read. We do not need id-token here (kept for the future OIDC
+      # switch, see file header).
+      id-token: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: dist
+          path: dist/
+
       - name: Publish to PyPI
-        # if: github.event_name == 'release'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           twine upload dist/*
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v6
+  deploy-update:
+    name: emit deployment event
+    needs: publish
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+    steps:
+      - name: Create GitHub Deployment
+        uses: actions/github-script@v8
         with:
-          name: dist
-          path: dist/
+          script: |
+            const tag = context.payload.release.tag_name || '';
+            const ref = tag.startsWith('${{ vars.DEPLOY_REF_PREFIX }}')
+              ? tag.slice('${{ vars.DEPLOY_REF_PREFIX }}'.length)
+              : tag;
+            const envName = '${{ vars.DEPLOY_ENVIRONMENT }}' || 'pypi';
+            const body = [
+              `**Published to PyPI**`,
+              ``,
+              `- release: ${context.payload.release.name || tag}`,
+              `- tag:    \`${tag}\``,
+              `- ref:    \`${ref}\``,
+              `- actor:  @${context.payload.release.author?.login || 'unknown'}`,
+            ].join('\n');
+            const { data } = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: tag || context.ref,
+              environment: envName,
+              auto_merge: false,
+              required_contexts: [],
+              description: `PyPI release ${tag}`,
+            });
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: data.id,
+              state: 'success',
+              description: `Published ${tag} to PyPI`,
+              log_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
+            core.info(body);
