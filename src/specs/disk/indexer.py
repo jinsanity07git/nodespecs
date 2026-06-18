@@ -34,6 +34,22 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
+def _on_disk_bytes(st: "os.stat_result") -> int:
+    """Return apparent on-disk bytes for a stat result.
+
+    Uses ``st_blocks * 512`` on POSIX (the number of 512-byte blocks
+    the OS has actually allocated, which captures cluster rounding
+    and sparse files). On Windows, ``st_blocks`` is ``None``; fall
+    back to ``st_size`` so the indexer does not crash on the primary
+    supported host. The fallback is the same number the legacy
+    ``os.walk + os.stat`` walker would have produced on Windows.
+    """
+    blocks = getattr(st, "st_blocks", None)
+    if blocks is None:
+        return st.st_size
+    return blocks * 512
+
+
 class FileIndexer:
     """Walk a directory tree, capture per-file metadata, expose stats."""
 
@@ -61,13 +77,20 @@ class FileIndexer:
 
         Uses an explicit ``os.scandir`` walker so a per-directory
         ``PermissionError`` does not abort the whole walk the way the
-        legacy ``os.walk`` did. Symlinks are not followed
-        (``follow_symlinks=False``), matching the previous behavior.
+        legacy ``os.walk`` did. Symlinks-to-files are recorded under
+        the symlink's path with the target's stats (matches the
+        legacy ``os.walk + os.stat`` pair); symlinks-to-directories
+        are not followed, matching the old ``followlinks=False``.
 
         Returns the number of file entries indexed (including
         hardlinked paths, so two hardlinks of one inode count as 2).
         """
         self._reset_stats()
+        # Clear per-file records from any previous run. Without this,
+        # the second call's _finalize_stats() would aggregate both
+        # runs' records and produce impossible counters
+        # (unique_files > total_files, hardlink_extra_paths < 0).
+        self.files = {}
 
         stack: List[str] = [root_path]
         while stack:
@@ -83,12 +106,23 @@ class FileIndexer:
             for entry in entries:
                 child = os.path.join(dirpath, entry.name)
                 try:
-                    if entry.is_file(follow_symlinks=False):
-                        self._record_file(child, entry)
+                    is_link = entry.is_symlink()
+                    # Symlink-to-file: stat the target (matches the
+                    # legacy os.walk + os.stat pair, which placed
+                    # symlinks-to-files in ``filenames`` and stat'd
+                    # the target). Symlink-to-dir: do NOT descend
+                    # (matches followlinks=False). Plain files and
+                    # plain dirs use follow_symlinks=False.
+                    if is_link:
+                        if entry.is_file(follow_symlinks=True):
+                            self._record_file(child, entry, follow_symlinks=True)
+                        # symlink-to-dir is silently skipped
+                    elif entry.is_file(follow_symlinks=False):
+                        self._record_file(child, entry, follow_symlinks=False)
                     elif entry.is_dir(follow_symlinks=False):
                         stack.append(child)
-                    # Symlinks and other entry types are silently skipped
-                    # (matches the previous os.walk default).
+                    # Other entry types (sockets, FIFOs, etc.) are
+                    # silently skipped.
                 except (OSError, PermissionError) as e:
                     print(f"Error accessing {child}: {e}")
                     self.stats["skipped_paths"] += 1
@@ -96,9 +130,19 @@ class FileIndexer:
         self._finalize_stats()
         return self.stats["total_files"]
 
-    def _record_file(self, filepath: str, entry: "os.DirEntry") -> None:
-        """Stat a single file entry and append to ``self.files`` + ``self.stats``."""
-        st = entry.stat(follow_symlinks=False)
+    def _record_file(
+        self,
+        filepath: str,
+        entry: "os.DirEntry",
+        follow_symlinks: bool = False,
+    ) -> None:
+        """Stat a single file entry and append to ``self.files`` + ``self.stats``.
+
+        ``follow_symlinks`` is forwarded to ``entry.stat()``; pass
+        ``True`` for symlink-to-file entries so the target's stats
+        are recorded under the symlink's path.
+        """
+        st = entry.stat(follow_symlinks=follow_symlinks)
         _, ext = os.path.splitext(entry.name)
         ext = ext.lower()
         posix_path = Path(filepath).as_posix()
@@ -107,7 +151,7 @@ class FileIndexer:
             "filename": entry.name,
             "extension": ext,
             "size": st.st_size,
-            "on_disk": st.st_blocks * 512,
+            "on_disk": _on_disk_bytes(st),
             "blocks": st.st_blocks,
             "nlinks": st.st_nlink,
             "inode": st.st_ino,
@@ -256,7 +300,11 @@ class FileIndexer:
         try:
             cursor = conn.cursor()
 
-            # Create the files table with the new stat columns
+            # Create the files table with the new stat columns. Note:
+            # the indexes are created *after* the migration block
+            # below, because the index on (device, inode) would fail
+            # on a pre-0.4.1 table that does not yet have those
+            # columns.
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS files (
@@ -275,6 +323,31 @@ class FileIndexer:
                 )
             """
             )
+
+            # Idempotent migration: if this is an older DB (pre-0.4.1),
+            # ``CREATE TABLE IF NOT EXISTS`` above is a no-op and the
+            # table still has only the original 6 columns. The subsequent
+            # ``INSERT OR REPLACE`` would fail with
+            # ``SQLite error: no such column: device``. Add any missing
+            # columns via ``PRAGMA table_info`` + ``ALTER TABLE``.
+            _NEW_FILE_COLUMNS = {
+                "on_disk": "INTEGER",
+                "blocks":  "INTEGER",
+                "nlinks":  "INTEGER",
+                "inode":   "INTEGER",
+                "device":  "INTEGER",
+            }
+            existing = {
+                row[1]
+                for row in cursor.execute("PRAGMA table_info(files)").fetchall()
+            }
+            for name, decl in _NEW_FILE_COLUMNS.items():
+                if name not in existing:
+                    cursor.execute(
+                        f"ALTER TABLE files ADD COLUMN {name} {decl}"
+                    )
+
+            # Indexes can be created only after the columns exist.
             cursor.execute(
                 "CREATE INDEX IF NOT EXISTS idx_files_inode "
                 "ON files(device, inode)"
