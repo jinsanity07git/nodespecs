@@ -21,6 +21,7 @@ name: publish-and-deploy
 on:
   release:
     types: [published]
+  # Add this to enable manual triggering
   workflow_dispatch:
 
 # Publish jobs need write on contents (for tag ref) and id-token (reserved for
