@@ -121,3 +121,23 @@ These are the aspects a `pip install` user will judge this package on, in rough 
 10. **Errors are messages, not stack traces.** A `pip install` user on a host with no NVIDIA driver, no `nvidia-smi`, no `psutil`, no `pip`, and Python 3.12 should still see a clean friendly message from `info_gpu()` and a clean exit code. We learned this in PR #6: any code path that calls `subprocess.check_call` on a user-controlled string is a future issue waiting to happen. Guard every external call.
 
 When in doubt, the order is: tests first, then a changelog entry, then a version bump, then the code change. Tests are the only artifact that proves a fix is real.
+
+## Feature Delivery Workflow
+
+For substantial features, bug fixes, refactors, and other release-impacting code changes, follow the full pipeline described in [AGENTS.md](AGENTS.md) under "Feature Delivery Workflow":
+
+> **Pipeline:** feature prompt → implementation contract → latest-base feature branch → milestone implementation and commits → version/changelog/docs → validation → push → draft PR with a descriptive title and detailed body → handoff.
+
+The project-specific shape of that pipeline:
+
+1. **Implementation contract** — restate behavior, assumptions, scope, acceptance criteria, and a validation plan. Honor the Swiss Army Knife philosophy and the package-health principles above.
+2. **Feature branch** — branch from the latest `main` (or the base the user names). Use a descriptive name (`fix/issue-5-auto-install-uv`, `chore/package-health`, `chore/publish-workflow`). Never implement substantial work directly on `main`.
+3. **Milestone commits** — one commit per coherent milestone, concise imperative message, stage only files belonging to that milestone.
+4. **Release metadata** — bump `__version__` in [src/specs/__init__.py](src/specs/__init__.py) (SemVer; `setup.py::sync_version` rewrites `pyproject.toml` on the next build), add a `CHANGELOG.md` entry under the new version section (Keep-a-Changelog format, dated, grouped by *Added / Changed / Fixed / Removed*), update README if user-visible behavior changed.
+5. **Validation** — `python -m unittest discover -s tests -v`, `python -m py_compile src/specs/**/*.py`, plus CLI smoke (`python -m specs -v`, `python -m specs bcpu`, `python -m specs fclean`). Confirm the diff contains only intended files.
+6. **PR** — push with upstream tracking; descriptive title in `type(scope): summary` form; detailed Markdown body covering summary/motivation, implementation/model, impact, behavior and tradeoffs, validation, limitations, follow-ups; verify the PR is open with correct head/base refs.
+7. **Handoff** — report branch, milestone commits, version change, validation, PR URL; update the related issue if one exists.
+
+**Hotfix exception:** for a live incident (CI red on `main`, broken release), the user may explicitly authorize a direct-to-`main` hotfix — single well-scoped commit, imperative message naming the symptom. See `a9edd94 fix(ci): install twine in publish job` for the worked example.
+
+**Out of scope of the branch/version/PR workflow:** pure conversation, inspection-only work, plans, and small documentation-only edits (unless the user asks to publish them).
