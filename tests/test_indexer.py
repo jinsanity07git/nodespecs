@@ -255,8 +255,12 @@ class FileIndexerMigrationTests(unittest.TestCase):
 
     def test_legacy_schema_is_migrated(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            _write(root / "a.txt", b"hello")
+            # Put the test files in a subdir so the walker doesn't also
+            # pick up the legacy.db SQLite file (which is a regular
+            # file on disk and would otherwise show up in the index).
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir()
+            _write(data_dir / "a.txt", b"hello")
             legacy_db = Path(tmp) / "legacy.db"
             with sqlite3.connect(str(legacy_db)) as c:
                 c.execute(
@@ -276,7 +280,7 @@ class FileIndexerMigrationTests(unittest.TestCase):
                 c.commit()
 
             indexer = FileIndexer()
-            indexer.index_directory(str(root))
+            indexer.index_directory(str(data_dir))
             ok, err = indexer.export_to_sqlite(str(legacy_db))
             self.assertTrue(ok, msg=err)
 
@@ -293,8 +297,10 @@ class FileIndexerMigrationTests(unittest.TestCase):
             self.assertTrue(ok2, msg=err2)
             with sqlite3.connect(str(legacy_db)) as c:
                 row = c.execute(
-                    "SELECT size, on_disk, nlinks FROM files"
+                    "SELECT size, on_disk, nlinks, filepath "
+                    "FROM files WHERE filename = 'a.txt'"
                 ).fetchone()
+            self.assertIsNotNone(row)
             self.assertEqual(row[0], 5)        # size
             self.assertGreaterEqual(row[1], 5) # on_disk (>= size; == size if blocks None)
             self.assertGreaterEqual(row[2], 1) # nlinks
