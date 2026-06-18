@@ -6,6 +6,71 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-18
+
+### Added
+- `FileIndexer` now captures `st_blocks`, `st_nlink`, `st_ino`, and
+  `st_dev` per file, and reports a deduped `on_disk_size` (sum of
+  `st_blocks * 512` over distinct inodes) alongside the existing
+  `total_size`. This is the field that most closely matches what the
+  OS reports as "used space" for a file walk; it accounts for cluster
+  rounding on NTFS / exFAT and for sparse files, and is not inflated
+  by hardlinks.
+- `get_statistics()` returns five new keys: `unique_files`,
+  `logical_size` (deduped), `on_disk_size` (deduped),
+  `hardlink_extra_paths` (paths beyond the first for each shared
+  inode), and `skipped_paths` (directory / entry access errors).
+- The SQLite export adds matching `on_disk`, `blocks`, `nlinks`,
+  `inode`, and `device` columns to the `files` table (plus indexes on
+  `(device, inode)` and `extension`) and the same five new rows to
+  the `statistics` table.
+- `tests/test_indexer.py`: stdlib `unittest` smoke tests covering the
+  new counts, hardlink dedup, the per-directory error path, and the
+  SQLite round-trip.
+
+### Changed
+- `FileIndexer.index_directory()` is now implemented with an explicit
+  `os.scandir` stack walker instead of `os.walk`. The legacy
+  `os.walk` call had no `onerror=` callback, so a single unreadable
+  directory propagated the exception and stopped the index; the new
+  walker catches per-directory `OSError` / `PermissionError` and
+  continues, but the bigger improvement is the `skipped_paths`
+  counter — the indexer now reports *how much* of the tree was
+  unread instead of just stack-tracing. Symlink-to-file entries are
+  now recorded under the symlink's path with the target's stats
+  (matches the legacy `os.walk + os.stat` pair). Symlink-to-dir
+  entries are still not followed, matching the old
+  `followlinks=False`.
+- `specs.disk.drive` (`python -m specs.disk.drive`): the `--dir`
+  default is now the current working directory on non-Windows hosts
+  (still `F:\\` on Windows, matching the legacy behavior). After a
+  successful index, the CLI prints a side-by-side comparison between
+  `on_disk_size` and `shutil.disk_usage(root_dir)` so the gap from
+  filesystem metadata, snapshots, and unread subtrees is visible
+  instead of hidden.
+
+### Fixed
+- `FileIndexer.export_to_sqlite()` now idempotently migrates a pre-0.4.1
+  `files` table by `ALTER TABLE`-adding any missing columns
+  (`on_disk`, `blocks`, `nlinks`, `inode`, `device`). Previously,
+  re-running the indexer on an existing 0.4.0 `file_index.db` failed
+  with `SQLite error: no such column: device`.
+- `FileIndexer._record_file()` no longer crashes on Windows, where
+  `os.stat_result.st_blocks` is `None`. On-disk accounting falls back
+  to `st_size` on Windows via a new `_on_disk_bytes` helper; POSIX
+  behavior (block-based accounting) is unchanged.
+- `FileIndexer.index_directory()` now clears `self.files` at the
+  start of every call, so calling it twice on one instance produces
+  internally-consistent stats for the second call. Previously, the
+  second call's `_finalize_stats` walked stale records from the first
+  and could produce `unique_files > total_files` and a negative
+  `hardlink_extra_paths`.
+- `specs.disk.drive`: the comparison row's "OS - indexer" label now
+  matches the math (was "indexer - OS" with the opposite sign), and
+  the explanation text is branched on whether the indexed directory
+  is the volume root, so the gap is attributed correctly in both
+  cases.
+
 ## [0.4.0] - 2026-06-16
 
 ### Added
@@ -127,7 +192,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Initial release. Hardware info (CPU, memory, disk, network), CPU
   benchmark, and downloads-folder organizer.
 
-[Unreleased]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/jinsanity07git/nodespecs/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/jinsanity07git/nodespecs/compare/v0.3.0...v0.3.1

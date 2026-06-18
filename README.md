@@ -61,18 +61,32 @@ python -m specs cld -i='172.25.1.228'
 
 ### File Indexer Script
 
+`python -m specs.disk.drive` walks a directory tree, captures per-file
+metadata (logical size, on-disk usage in 512-byte blocks, hardlinks,
+inode, device), and writes the result to a SQLite database. It also
+prints a side-by-side comparison between the indexer's `on_disk_size`
+and `shutil.disk_usage(root_dir)` so the gap from filesystem metadata,
+snapshots, and unread subtrees is visible.
+
+The new on-disk size is deduped by inode, so a file with N hardlinks
+contributes its real allocation once instead of N times. Cluster
+rounding on NTFS / exFAT and sparse files are automatically accounted
+for via `st_blocks * 512`.
+
 ##### Usage
 
-Run the script as a module from the repository root:
+Run from the repository root. `--dir` defaults to the current working
+directory on Linux / macOS and to `F:\\` on Windows:
 
 ```shell
 python -m specs.disk.drive
 ```
 
-To index a custom directory, pass `--dir` with a Windows raw path literal:
+To index a custom directory, pass `--dir` explicitly:
 
 ```shell
-python -m specs.disk.drive --dir "F:\\"
+python -m specs.disk.drive --dir "F:\\"            # Windows
+python -m specs.disk.drive --dir /home/me/data    # Linux / macOS
 ```
 
 To set the SQLite output path explicitly:
@@ -86,16 +100,35 @@ python -m specs.disk.drive --dir "F:\\" --db "F:\\file_index.db"
 On success:
 
 ```
-Indexed <N> files
-Successfully exported to SQLite database: <path>\file_index.db
+Indexed <N> files (<U> unique inodes)
+  logical size:         <bytes> bytes
+  on-disk size:         <bytes> bytes  (deduped by inode; accounts for cluster rounding + sparse files)
+  hardlink paths:       <count> (extra paths sharing an inode)
+  skipped:              <count> (permission / access errors during walk)
+Successfully exported to SQLite database: <path>/file_index.db
+
+OS-reported usage of the volume containing <root_dir> (indexer covers this subtree only):
+  total:                <bytes> bytes
+  used:                 <bytes> bytes
+  free:                 <bytes> bytes
+  OS - indexer:         <bytes> bytes  (includes every file outside the indexed subtree, plus metadata, snapshots, etc.)
 ```
+
+When the indexed directory is the volume root (e.g. `C:\\` on Windows
+or `/` on Linux), the OS-reported block reports the volume itself and
+the gap is attributed to "metadata, system files, unread subtrees,
+snapshots" instead of "files outside the indexed subtree."
 
 On failure to export:
 
 ```
-Indexed <N> files
 Export failed: <error message>
 ```
+
+The SQLite `files` table has columns for `filepath`, `filename`,
+`extension`, `size`, `on_disk`, `blocks`, `nlinks`, `inode`, `device`,
+`last_modified`, and `indexed_at`. The `statistics` table holds the
+same counters that the CLI prints.
 
 
 ```shell

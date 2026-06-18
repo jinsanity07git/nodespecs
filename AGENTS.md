@@ -28,6 +28,34 @@
 - Update `CHANGELOG.md` for every release-impacting change. Keep-a-Changelog format, dated sections, grouped by *Added / Changed / Fixed / Removed*.
 - Keep `pyproject.toml` metadata honest: `version`, `classifiers`, `keywords`, `[project.urls]`, and `requires-python` are user-facing.
 
+## GitHub Pull Request Review Practice
+
+- Prefer the connected GitHub App for PR metadata, diffs, comments, and review-thread inspection.
+- Creating a PR review requires the App or token to have repository permission **Pull requests: Read and write**. If the App returns `403 Resource not accessible by integration`, do not repeatedly retry the same connector call:
+  1. Confirm the App is installed for the repository and inspect its granted permissions.
+  2. If a permission update is pending, the account or organization owner must approve it.
+  3. If the App does not request pull-request write access, only the App owner can add that permission. A repository owner cannot expand a third-party App beyond the permissions it requests.
+  4. Fall back to the authenticated GitHub CLI when `gh auth status` shows a user token with suitable repository access.
+- Before selecting a review event, compare the authenticated user with the PR author:
+  ```bash
+  gh api user --jq .login
+  gh pr view <number> --repo <owner/repo> --json author,headRefOid
+  ```
+  GitHub does not allow a PR author to approve or request changes on their own PR. Use `COMMENT` for a self-review; reserve `REQUEST_CHANGES` or `APPROVE` for a different authorized reviewer.
+- To submit one review containing a summary and inline comments, write a temporary JSON payload and call:
+  ```bash
+  gh api --method POST \
+    repos/<owner>/<repo>/pulls/<number>/reviews \
+    --input /tmp/pr-review.json
+  ```
+  The payload should contain the current PR head SHA as `commit_id`, an allowed `event`, a review `body`, and inline `comments` with `path`, right-side `line`, `side: "RIGHT"`, and `body`. Prefer line/side fields over the older diff-position field.
+- Worked example from PR #9:
+  1. The connected App read the PR and diff successfully but review creation failed with `403 Resource not accessible by integration`.
+  2. `gh auth status` confirmed an authenticated user token with repository access.
+  3. A CLI attempt using `REQUEST_CHANGES` failed with `422 Review Can not request changes on your own pull request` because the authenticated user authored the PR.
+  4. Reusing the same review payload with `event: "COMMENT"` successfully posted the summary and five inline comments.
+  5. Fetch the PR comments or review threads afterward to verify the review and all inline comments were published.
+
 ## Feature Delivery Workflow
 
 Use this workflow for substantial features, bug fixes, refactors, and other release-impacting code changes unless the user explicitly requests a different Git strategy:
