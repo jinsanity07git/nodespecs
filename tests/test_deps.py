@@ -58,6 +58,87 @@ class InfoGpuDegradeTests(unittest.TestCase):
         self.assertIn("No NVIDIA GPU detected", buf.getvalue())
 
 
+class EnsureLibAutoInstallTests(unittest.TestCase):
+    """Issue #10: a function decorated with `@ensure_lib("psutil")` must
+    trigger the lazy-install path on first call rather than immediately
+    raising `ImportError: Module psutil is required but not installed.`
+    before the user has had a chance to install anything.
+
+    These tests do not actually install psutil. They use mock to assert
+    that the decorator delegates to `check_imp` (the same code path used
+    by `ensure_libs`) when the module is not yet loaded, and that the
+    blocklist guard is preserved.
+    """
+
+    def test_ensure_lib_delegates_to_check_imp_when_module_missing(self):
+        """If the module is not in target_globals, the wrapper must call
+        check_imp (which is the function that owns the uv/pip install
+        logic), not raise ImportError directly.
+        """
+        @deps.ensure_lib("psutil")
+        def probe():
+            return "ok"
+
+        # Simulate psutil being absent from the wrapper's globals. The
+        # decorator's wrapper looks up `psutil` in probe.__globals__; if
+        # it's not there, the wrapper must fall through to check_imp.
+        probe.__globals__.pop("psutil", None)
+
+        with mock.patch.object(deps, "check_imp", return_value=True) as m:
+            result = probe()
+
+        self.assertEqual(result, "ok")
+        m.assert_called_once()
+        # First positional arg must be the module spec (with or without
+        # a version pin).
+        args, kwargs = m.call_args
+        self.assertTrue(args[0].startswith("psutil"))
+        # check_imp is called with *some* globals mapping so the loaded
+        # module is visible to the wrapped body. (We don't pin to a
+        # specific dict — the wrapper happens to pass the caller's
+        # frame globals, which is good enough.)
+        self.assertIn("target_globals", kwargs)
+        self.assertIsNotNone(kwargs["target_globals"])
+
+    def test_ensure_lib_skips_check_imp_when_module_already_loaded(self):
+        """Once a module has been loaded into `sys.modules` (the real
+        production path — `check_imp` calls `importlib.import_module`
+        which populates `sys.modules`), the wrapper must read it back
+        without calling `check_imp` again on subsequent calls.
+        """
+        import types
+
+        # Build a sentinel module and inject it into sys.modules. The
+        # wrapper delegates to check_imp on a cache miss, so this is the
+        # path that simulates "already installed + already imported".
+        sentinel = types.ModuleType("psutil_for_ensure_lib_test")
+        # Use a non-`psutil` name so we cannot collide with a real psutil
+        # install — and decorate against that same name.
+        sys.modules[sentinel.__name__] = sentinel
+        try:
+            @deps.ensure_lib(sentinel.__name__)
+            def probe():
+                return "ok"
+
+            with mock.patch.object(deps, "check_imp") as m:
+                for _ in range(3):
+                    self.assertEqual(probe(), "ok")
+            # check_imp must not be called at all — the module is
+            # already in sys.modules.
+            m.assert_not_called()
+        finally:
+            sys.modules.pop(sentinel.__name__, None)
+
+    def test_ensure_lib_blocklist_still_fires(self):
+        """The `_NON_PACKAGE_NAMES` guard must apply on the wrapper's
+        call path too, not just at decoration time. Decorating with a
+        blocked name still raises at decoration time (covered by
+        BlocklistTests); this test pins the decorator-time contract.
+        """
+        with self.assertRaises(ImportError):
+            deps.ensure_lib("distutils")
+
+
 class PublicApiTests(unittest.TestCase):
     """The package must import cleanly without any third-party deps."""
 

@@ -1,6 +1,6 @@
 from .hardware import ensure_libs, info_gpu
 # Version of the node-specs package
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 __all__ = [
     "ensure_libs",

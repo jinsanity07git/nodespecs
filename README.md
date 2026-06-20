@@ -21,9 +21,18 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 source $HOME/.local/bin/env
 uv python install 3.12
 
+# On modern Linux (Ubuntu 22.04+, Debian 12+) the system Python is
+# marked as "externally managed" by PEP 668. If a bare `pip install`
+# fails with `externally-managed-environment`, either add
+# `--break-system-packages` or use a virtualenv:
+sudo apt install python-is-python3
+sudo apt install python3-pip
+pip install nodespecs --break-system-packages
+
 uv init
 uv add nodespecs
-uv pip install psutil
+# v0.4.2+ auto-installs heavy deps (psutil, etc.) on first use via
+# the `@ensure_lib` decorator — no separate `uv pip install psutil`.
 uv run -m specs
 uv run -m specs bcpu
 
@@ -33,6 +42,16 @@ python -m specs bcpu
 
 ```
 ### install and use with pip
+
+> **Note on PEP 668.** On modern Linux distros (Ubuntu 22.04+, Debian
+> 12+, etc.), the system Python is marked as "externally managed."
+> If `pip install nodespecs` fails with `externally-managed-environment`,
+> add `--break-system-packages` or use a virtual environment
+> (`python3 -m venv .venv && source .venv/bin/activate`).
+>
+> v0.4.2+ no longer requires a separate `pip install psutil` — the
+> `@ensure_lib` decorator auto-installs missing heavy deps (`psutil`,
+> etc.) on first use. You only need `pip install nodespecs`.
 
 ```shell
 pip install nodespecs
