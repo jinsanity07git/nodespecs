@@ -42,6 +42,11 @@ python -m specs bcpu
 
 ```
 ### install and use with pip
+```shell
+sudo apt install python-is-python3
+sudo apt install python3-pip
+
+```
 
 > **Note on PEP 668.** On modern Linux distros (Ubuntu 22.04+, Debian
 > 12+, etc.), the system Python is marked as "externally managed."
