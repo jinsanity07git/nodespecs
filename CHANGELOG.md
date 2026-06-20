@@ -6,6 +6,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-20
+
+### Fixed
+- `@ensure_lib("psutil")`-decorated helpers (`get_system_info`,
+  `info_cpu`, `info_mem`, `info_net`, `boot_time`) now trigger the
+  lazy-install path on first call (same `uv add` / `uv pip install` /
+  `pip install` ladder as `@ensure_libs`), so a fresh
+  `pip install nodespecs` followed by `python -m specs` installs the
+  missing dependency instead of raising
+  `ImportError: Module psutil is required but not installed.` The
+  `_NON_PACKAGE_NAMES` blocklist (issue #5) is preserved on the
+  decorator path. (issue #10)
+
+### Tests
+- `tests/test_deps.py`: new `EnsureLibAutoInstallTests` covering the
+  decorator's delegation to `check_imp`, the post-load shortcut (no
+  re-install on every call), and the blocklist guard at decoration
+  time.
+
+
 ## [0.4.1] - 2026-06-18
 
 ### Added

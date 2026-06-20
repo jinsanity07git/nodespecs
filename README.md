@@ -23,7 +23,6 @@ uv python install 3.12
 
 uv init
 uv add nodespecs
-uv pip install psutil
 uv run -m specs
 uv run -m specs bcpu
 

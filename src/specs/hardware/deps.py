@@ -113,6 +113,20 @@ def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]]
 
 
 def ensure_lib(module_name):
+    """Decorator that lazily imports `module_name` on first call.
+
+    If the module is not installed, the wrapper delegates to
+    `check_imp` (same path as `ensure_libs`) which tries `uv add` /
+    `uv pip install` (when a `.venv` workspace root is found) and falls
+    back to `pip install`. The `_NON_PACKAGE_NAMES` blocklist is enforced
+    so a stray transitive `ModuleNotFoundError` for a stdlib-removed name
+    (e.g. `distutils` on Python 3.12) cannot trigger a doomed
+    `pip install` (see issue #5).
+
+    The decorator also accepts an optional `version_spec` (e.g.
+    `"psutil>=5.9.5"`) so callers can pin a minimum version on the
+    auto-install. When omitted, the bare module name is used.
+    """
     module, _ = parse_dep(module_name)
     if _is_blocked_module(module):
         _raise_blocked(module)
@@ -120,18 +134,26 @@ def ensure_lib(module_name):
     def decorator(func):
         def wrapper(*args, **kwargs):
             target_globals = func.__globals__
-            if module in target_globals:
-                return func(*args, **kwargs)
-
-            importlib.invalidate_caches()
-            loaded_module = sys.modules.get(module)
-            if loaded_module is None:
-                spec = importlib.util.find_spec(module)
-                if spec is None:
-                    raise ImportError(f"Module {module} is required but not installed.")
-                loaded_module = importlib.import_module(module)
-
-            target_globals[module] = loaded_module
+            # Skip the install path when the module is already visible
+            # to the wrapped function. Two caches matter:
+            #   * `module in target_globals` — the wrapped body sees it
+            #     as a global name (set by a previous check_imp success
+            #     or by the caller's own `import`).
+            #   * `module in sys.modules` — the module is loaded, but
+            #     the wrapped body resolves it via `import` rather than
+            #     as a global. (We do not pre-bind it into
+            #     target_globals on a hit, to avoid surprising mutations
+            #     of the caller's namespace.)
+            if (
+                module not in target_globals
+                and module not in sys.modules
+            ):
+                # Delegate to check_imp so the install path (uv add /
+                # uv pip install / pip install) and the blocklist guard
+                # are shared with ensure_libs. check_imp loads the
+                # module into target_globals on success, so subsequent
+                # calls hit the `module in target_globals` shortcut.
+                check_imp(module_name, target_globals=target_globals)
             return func(*args, **kwargs)
 
         return wrapper
