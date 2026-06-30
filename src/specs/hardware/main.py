@@ -4,9 +4,36 @@
 
 import platform
 import shutil
+import socket
 from datetime import datetime
 
 from .deps import ensure_lib, ensure_libs
+
+
+_SKIPPED_DISK_FSTYPES = frozenset(
+    [
+        "autofs",
+        "binfmt_misc",
+        "bpf",
+        "cgroup",
+        "cgroup2",
+        "configfs",
+        "debugfs",
+        "devpts",
+        "devtmpfs",
+        "efivarfs",
+        "fusectl",
+        "hugetlbfs",
+        "mqueue",
+        "proc",
+        "pstore",
+        "rpc_pipefs",
+        "securityfs",
+        "squashfs",
+        "sysfs",
+        "tracefs",
+    ]
+)
 
 
 def get_size(bytes, suffix="B"):
@@ -34,38 +61,166 @@ def info_sys():
     print(f"Processor: {uname.processor}")
 
 
+def _format_percent(value):
+    try:
+        return f"{float(value):.1f}%"
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def _print_summary_row(label, value):
+    print(f"{label:<8}: {value}")
+
+
+def _memory_used(memory):
+    used = getattr(memory, "used", None)
+    if used is not None:
+        return used
+    total = getattr(memory, "total", 0) or 0
+    available = getattr(memory, "available", 0) or 0
+    return max(total - available, 0)
+
+
+def _cpu_brand():
+    try:
+        from .. import cpuinfo
+
+        brand = cpuinfo.get_cpu_info().get("brand_raw")
+    except Exception:
+        brand = None
+    return brand or platform.processor() or "Unknown CPU"
+
+
+def _disk_label(partition):
+    device = getattr(partition, "device", "") or getattr(partition, "mountpoint", "")
+    mountpoint = getattr(partition, "mountpoint", "")
+    fstype = getattr(partition, "fstype", "")
+    label = device or "unknown"
+    if mountpoint and mountpoint != device:
+        label = f"{label} on {mountpoint}"
+    if fstype:
+        label = f"{label} ({fstype})"
+    return label
+
+
+def _skip_summary_partition(partition):
+    device = (getattr(partition, "device", "") or "").lower()
+    fstype = (getattr(partition, "fstype", "") or "").lower()
+    return device.startswith("/dev/loop") or fstype in _SKIPPED_DISK_FSTYPES
+
+
+def _is_ipv4_family(family):
+    return family == socket.AF_INET or str(family) == "AddressFamily.AF_INET"
+
+
+def _format_ipv4(interface_name, address):
+    ip_address = getattr(address, "address", "")
+    netmask = getattr(address, "netmask", "")
+    if netmask:
+        return f"{interface_name} {ip_address}/{netmask}"
+    return f"{interface_name} {ip_address}"
+
+
+def _first_useful_ipv4():
+    fallback = None
+    try:
+        interfaces = psutil.net_if_addrs()
+    except Exception:
+        return "unavailable"
+    for interface_name, interface_addresses in interfaces.items():
+        for address in interface_addresses:
+            if not _is_ipv4_family(getattr(address, "family", None)):
+                continue
+            ip_address = getattr(address, "address", "")
+            if not ip_address:
+                continue
+            formatted = _format_ipv4(interface_name, address)
+            if fallback is None:
+                fallback = formatted
+            if (
+                not ip_address.startswith("127.")
+                and not ip_address.startswith("169.254.")
+                and ip_address != "0.0.0.0"
+            ):
+                return formatted
+    return fallback or "unavailable"
+
+
 @ensure_lib("psutil")
 def get_system_info():
     cpu_count = psutil.cpu_count(logical=True)
-    memory_gb = round(psutil.virtual_memory().total / (1024 ** 3), 2)
+    memory = psutil.virtual_memory()
+    memory_gb = round(memory.total / (1024 ** 3), 2)
+    cpu_usage = psutil.cpu_percent(interval=None)
 
     # Get storage information
     storage_info = []
+    disk_rows = []
+    seen_devices = set()
+    total_storage = 0
     for partition in psutil.disk_partitions():
+        if _skip_summary_partition(partition):
+            continue
         try:
             usage = psutil.disk_usage(partition.mountpoint)
             storage_info.append(
                 f"{partition.device} ({partition.fstype}): {round(usage.total / (1024 ** 3), 2)}GB"
             )
         except Exception:
-            pass
-    cpu_count = psutil.cpu_count(logical=True)
+            continue
 
-    print(f"vCPUs : {cpu_count}")
-    print(f"Memory: {memory_gb} GB")
-    print("Storage:")
-    unique_devices = {}
-    total_storage = 0
-    for info in storage_info:
-        device = info.split()[0]  # Get device name
-        if device not in unique_devices:
-            unique_devices[device] = info
-            # Extract the storage number (GB) from the info string
-            storage_gb = float(info.split()[-1].replace("GB", ""))
-            total_storage += storage_gb
-    for info in unique_devices.values():
-        print(f"***  {info}")
-    print(f"Total Storage: {total_storage:.2f} GB")
+        device_key = (
+            getattr(partition, "device", None)
+            or getattr(partition, "mountpoint", None)
+            or _disk_label(partition)
+        )
+        if device_key in seen_devices:
+            continue
+        seen_devices.add(device_key)
+        disk_rows.append((partition, usage))
+        total_storage += usage.total
+
+    uname = platform.uname()
+    _print_summary_row("OS", f"{uname.system} {uname.release} ({uname.machine})")
+    _print_summary_row("Host", uname.node or "unknown")
+    _print_summary_row("CPU", _cpu_brand())
+    _print_summary_row("vCPUs", cpu_count if cpu_count is not None else "unknown")
+    _print_summary_row("CPU Use", _format_percent(cpu_usage))
+    memory_text = (
+        f"{get_size(_memory_used(memory))} / {get_size(memory.total)} "
+        f"({_format_percent(memory.percent)})"
+    )
+    _print_summary_row("Memory", memory_text)
+
+    swap = psutil.swap_memory()
+    if getattr(swap, "total", 0):
+        swap_text = (
+            f"{get_size(_memory_used(swap))} / {get_size(swap.total)} "
+            f"({_format_percent(swap.percent)})"
+        )
+        _print_summary_row("Swap", swap_text)
+
+    if disk_rows:
+        for partition, usage in disk_rows:
+            disk_text = (
+                f"{_disk_label(partition)} {get_size(usage.used)} / "
+                f"{get_size(usage.total)} ({_format_percent(usage.percent)})"
+            )
+            _print_summary_row("Disk", disk_text)
+        _print_summary_row("Storage", f"{get_size(total_storage)} total")
+    else:
+        _print_summary_row("Disk", "unavailable")
+
+    _print_summary_row("IPv4", _first_useful_ipv4())
+    try:
+        net_io = psutil.net_io_counters()
+    except Exception:
+        _print_summary_row("Net I/O", "unavailable")
+    else:
+        _print_summary_row(
+            "Net I/O",
+            f"{get_size(net_io.bytes_sent)} sent / {get_size(net_io.bytes_recv)} recv",
+        )
 
     return cpu_count, memory_gb, storage_info
 

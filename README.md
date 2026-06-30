@@ -9,7 +9,7 @@ A Swiss Army Knife library for system, hardware, and filesystem utilities. Repor
 
 ```shell
 pip install nodespecs
-python -m specs                      # full system report
+python -m specs                      # compact system report
 python -m specs bcpu                 # CPU benchmark
 python -c "import specs; specs.info_gpu()"
 ```
