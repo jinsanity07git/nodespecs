@@ -40,13 +40,9 @@ def _run_default(args) -> int:
         print(__version__)
         return 0
 
-    from .hardware import get_system_info, info_cpu, info_mem, info_disk, info_net
+    from .hardware import get_system_info
 
     get_system_info()
-    info_cpu()
-    info_mem()
-    info_disk()
-    info_net()
     return 0
 
 

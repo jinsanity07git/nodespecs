@@ -6,6 +6,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-30
+
+### Changed
+- `python -m specs` now prints a compact fastfetch-like system summary
+  by default, with OS/host, CPU, memory, swap, deduped disks, one IPv4
+  row, and network I/O totals instead of appending the verbose hardware
+  section dumps. The detailed hardware functions remain available for
+  Python callers. (issue #12)
+
 ## [0.4.2] - 2026-06-20
 
 ### Fixed
