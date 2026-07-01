@@ -6,6 +6,27 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-01
+
+### Added
+- When a lazy `pip install` (the fallback path in `check_imp`) hits a
+  PEP 668 externally-managed environment (Debian/Ubuntu system Python
+  3.11+), `nodespecs` now prompts interactively to retry with
+  `--break-system-packages` instead of crashing. Non-interactive hosts
+  (CI, piped stdin) get a friendly `ImportError` listing the
+  alternatives (venv, `pipx`, `--break-system-packages`) rather than a
+  stack trace. (issue #14)
+
+### Fixed
+- Bare `pip install` failures in `specs.hardware.deps.check_imp` no
+  longer surface as a raw `subprocess.CalledProcessError`; they raise a
+  clear `ImportError`. (issue #14)
+
+### Tests
+- `tests/test_deps.py`: new `Pep668PromptTests` covering interactive
+  consent, decline, non-interactive (no `input()`), non-PEP-668 failure,
+  and retry-still-fails paths. Network-free; `subprocess.run` is mocked.
+
 ## [0.4.3] - 2026-06-30
 
 ### Changed
