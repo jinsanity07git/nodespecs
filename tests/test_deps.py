@@ -139,6 +139,160 @@ class EnsureLibAutoInstallTests(unittest.TestCase):
             deps.ensure_lib("distutils")
 
 
+class Pep668PromptTests(unittest.TestCase):
+    """Issue #14: when a lazy `pip install` hits a PEP 668
+    externally-managed environment, `check_imp` must offer an interactive
+    `--break-system-packages` retry rather than surfacing a raw
+    `subprocess.CalledProcessError`. Non-interactive hosts and declines must
+    raise a clear `ImportError`.
+
+    These tests do not run pip. They force `check_imp` onto the bare-pip
+    fallback path (no module, no `.venv` workspace root, no `uv` on PATH)
+    and drive `subprocess.run` / `sys.stdin.isatty` / `input` via mock.
+    """
+
+    _PEP668_STDERR = (
+        "error: externally-managed-environment\n"
+        "\n"
+        "This environment is externally managed\n"
+    )
+
+    def _run_factory(self, scenarios):
+        """Build a fake `subprocess.run` that returns each `scenarios`
+        `subprocess.CompletedProcess`-like object in order. Captures each call
+        so the test can inspect argv."""
+        calls = []
+        queue = list(scenarios)
+
+        def fake_run(cmd, **kwargs):
+            calls.append(list(cmd))
+            if queue:
+                result = queue.pop(0)
+            else:
+                # Default to a generic failure so a missing scenario is loud.
+                result = _RunResult(returncode=1, stderr="unexpected extra run")
+            return result
+
+        return fake_run, calls
+
+    def _patch_bare_pip_prereqs(self, isatty=True, input_side_effect=None):
+        """Mock the prereqs so `check_imp` reaches `_pip_install_or_raise`."""
+        patcher_load = mock.patch.object(deps, "_load_module", return_value=None)
+        patcher_ws = mock.patch.object(
+            deps, "_find_workspace_root_with_venv", return_value=None
+        )
+        patcher_which = mock.patch.object(deps.shutil, "which", return_value=None)
+        patcher_isatty = mock.patch.object(
+            deps.sys, "stdin", new=mock.MagicMock(isatty=lambda: isatty)
+        )
+        # `input` is a builtin; patch it on builtins.
+        patcher_input = mock.patch("builtins.input", side_effect=input_side_effect or [])
+        return [patcher_load, patcher_ws, patcher_which, patcher_isatty, patcher_input]
+
+    def test_pep668_interactive_consent_retries_with_break_system_packages(self):
+        from unittest import mock as _mock
+
+        scenarios = [
+            _RunResult(returncode=1, stderr=self._PEP668_STDERR),
+            _RunResult(returncode=0, stderr=""),
+        ]
+        fake_run, calls = self._run_factory(scenarios)
+        patchers = self._patch_bare_pip_prereqs(isatty=True, input_side_effect=["y"])
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            result = deps.check_imp("psutil")
+
+        # Success path: check_imp returns False (it does not re-import).
+        self.assertFalse(result)
+        # Two pip invocations; the second must carry --break-system-packages.
+        self.assertEqual(len(calls), 2)
+        self.assertIn("--break-system-packages", calls[1])
+        self.assertIn("psutil", calls[1])
+
+    def test_pep668_interactive_decline_raises_importerror(self):
+        from unittest import mock as _mock
+
+        scenarios = [_RunResult(returncode=1, stderr=self._PEP668_STDERR)]
+        fake_run, calls = self._run_factory(scenarios)
+        patchers = self._patch_bare_pip_prereqs(isatty=True, input_side_effect=["n"])
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError) as ctx:
+                deps.check_imp("psutil")
+
+        self.assertIn("--break-system-packages", str(ctx.exception))
+        # Declined → no retry call.
+        self.assertEqual(len(calls), 1)
+
+    def test_pep668_noninteractive_raises_without_prompting(self):
+        from unittest import mock as _mock
+
+        scenarios = [_RunResult(returncode=1, stderr=self._PEP668_STDERR)]
+        fake_run, calls = self._run_factory(scenarios)
+        # isatty=False, and assert input() is never called (no side_effect
+        # entries — any call would raise StopIteration and fail the test).
+        patchers = self._patch_bare_pip_prereqs(isatty=False)
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError):
+                deps.check_imp("psutil")
+
+        # No retry, and the decline path was taken without input().
+        self.assertEqual(len(calls), 1)
+
+    def test_non_pep668_pip_failure_raises_importerror(self):
+        from unittest import mock as _mock
+
+        scenarios = [_RunResult(returncode=1, stderr="some other pip error")]
+        fake_run, calls = self._run_factory(scenarios)
+        patchers = self._patch_bare_pip_prereqs(isatty=True)
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError) as ctx:
+                deps.check_imp("psutil")
+
+        # Not PEP 668 → no --break-system-packages retry, no input().
+        self.assertEqual(len(calls), 1)
+        self.assertIn("some other pip error", str(ctx.exception))
+
+    def test_pep668_retry_still_fails_raises_importerror(self):
+        from unittest import mock as _mock
+
+        scenarios = [
+            _RunResult(returncode=1, stderr=self._PEP668_STDERR),
+            _RunResult(returncode=1, stderr="retry blew up"),
+        ]
+        fake_run, calls = self._run_factory(scenarios)
+        patchers = self._patch_bare_pip_prereqs(isatty=True, input_side_effect=["y"])
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError) as ctx:
+                deps.check_imp("psutil")
+
+        self.assertEqual(len(calls), 2)
+        self.assertIn("--break-system-packages", calls[1])
+        self.assertIn("retry blew up", str(ctx.exception))
+
+
+class _RunResult(object):
+    """Minimal stand-in for subprocess.CompletedProcess (3.5+)."""
+
+    def __init__(self, returncode, stdout="", stderr=""):
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
 class PublicApiTests(unittest.TestCase):
     """The package must import cleanly without any third-party deps."""
 

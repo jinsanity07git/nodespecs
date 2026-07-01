@@ -18,6 +18,13 @@ from typing import Optional, MutableMapping
 # trigger a doomed `pip install`).
 _NON_PACKAGE_NAMES = frozenset({"distutils"})
 
+# PEP 668 marker pip prints to stderr when the target interpreter is an
+# externally-managed environment (Debian/Ubuntu system Python 3.11+). On such
+# hosts a bare `pip install <pkg>` exits non-zero, which used to surface as a
+# raw `subprocess.CalledProcessError` (issue #14). We sniff stderr for this
+# marker and offer an interactive `--break-system-packages` retry.
+_PEP668_MARKER = "externally-managed-environment"
+
 
 def _is_blocked_module(name: str) -> bool:
     """Return True if `name` is a stdlib-removed or CPython-internal name
@@ -64,6 +71,90 @@ def _load_module(module: str):
     return importlib.import_module(module)
 
 
+def _is_pep668_error(stderr_text):
+    """Return True if pip's stderr indicates an externally-managed
+    environment (PEP 668)."""
+    return bool(stderr_text) and _PEP668_MARKER in stderr_text
+
+
+def _friendly_pep668_message(install_target):
+    """User-facing explanation shown when we cannot install into an
+    externally-managed environment (PEP 668) — either because the host is
+    non-interactive or because the user declined the --break-system-packages
+    retry."""
+    return (
+        f"Cannot install {install_target!r}: this Python is an "
+        "externally-managed environment (PEP 668). Options:\n"
+        "  - use a virtualenv (python -m venv) and install there,\n"
+        "  - use `pipx`, or\n"
+        f"  - retry manually: {sys.executable} -m pip install "
+        f"{install_target} --break-system-packages"
+    )
+
+
+def _prompt_break_system_packages(install_target):
+    """Interactively ask whether to retry the install with
+    --break-system-packages. Returns True only on an explicit yes; False on
+    decline or EOF (e.g. piped stdin). Caller is responsible for checking
+    `sys.stdin.isatty()` first so we never block in a non-interactive
+    context."""
+    try:
+        answer = input(
+            f"\nRetry installing {install_target!r} with "
+            "--break-system-packages? [y/N]: "
+        )
+    except EOFError:
+        return False
+    return answer.strip().lower() in ("y", "yes")
+
+
+def _pip_install_or_raise(install_target):
+    """Run `python -m pip install <install_target>`.
+
+    Unlike a bare `subprocess.check_call`, a non-zero exit never surfaces as a
+    raw `subprocess.CalledProcessError` (issue #14): on a PEP 668
+    externally-managed failure we offer an interactive
+    `--break-system-packages` retry, and every other failure becomes a clear
+    `ImportError`. Returns None on success.
+    """
+    # Use stdout/stderr=PIPE + universal_newlines (not capture_output / text,
+    # which are 3.7+) so the stated python>=3.6 target keeps working.
+    base_cmd = [sys.executable, "-m", "pip", "install", install_target]
+    print(f"Attempting to install missing module: {install_target}")
+    proc = subprocess.run(
+        base_cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.returncode == 0:
+        return
+
+    if _is_pep668_error(proc.stderr):
+        if sys.stdin.isatty() and _prompt_break_system_packages(install_target):
+            retry_cmd = base_cmd[:-1] + ["--break-system-packages", install_target]
+            print("Retrying with --break-system-packages ...")
+            retry = subprocess.run(
+                retry_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            if retry.returncode == 0:
+                return
+            raise ImportError(
+                f"pip install --break-system-packages for {install_target!r} "
+                f"failed:\n{(retry.stderr or '').strip()}"
+            )
+        # Non-interactive host, or user declined.
+        raise ImportError(_friendly_pep668_message(install_target))
+
+    # Some other pip failure — surface a clean message, not CalledProcessError.
+    raise ImportError(
+        f"pip install for {install_target!r} failed:\n{(proc.stderr or '').strip()}"
+    )
+
+
 def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]] = None):
     module, version = parse_dep(module_name)
     if _is_blocked_module(module):
@@ -107,8 +198,7 @@ def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]]
         except (subprocess.CalledProcessError, FileNotFoundError):
             print("uv pip install failed, falling back to pip")
 
-    print(f"Attempting to install missing module: {install_target}")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", install_target])
+    _pip_install_or_raise(install_target)
     return False
 
 
