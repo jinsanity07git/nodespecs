@@ -183,22 +183,41 @@ def check_imp(module_name, target_globals: Optional[MutableMapping[str, object]]
     install_target = module_name if missing_module == module and version else missing_module
     workspace_root = _find_workspace_root_with_venv(Path(__file__).resolve())
     uv_path = shutil.which("uv")
+    installed = False
 
     if uv_path and workspace_root:
         print(f"Attempting to add missing module via uv: {install_target}")
         try:
             subprocess.check_call([uv_path, "add", install_target], cwd=str(workspace_root))
-            return False
+            installed = True
         except (subprocess.CalledProcessError, FileNotFoundError):
             print("uv add failed, attempting uv pip install")
 
-        try:
-            subprocess.check_call([uv_path, "pip", "install", install_target], cwd=str(workspace_root))
-            return False
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("uv pip install failed, falling back to pip")
+        if not installed:
+            try:
+                subprocess.check_call(
+                    [uv_path, "pip", "install", install_target], cwd=str(workspace_root)
+                )
+                installed = True
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                print("uv pip install failed, falling back to pip")
 
-    _pip_install_or_raise(install_target)
+    if not installed:
+        _pip_install_or_raise(install_target)
+        installed = True
+
+    # Re-load the module after successful install so it is available in
+    # the caller's globals. Without this, a function decorated with
+    # @ensure_lib("psutil") would crash with NameError on the first call
+    # because the module was pip-installed but never imported into the
+    # decorated function's scope (issue #16).
+    loaded_module = _load_module(module)
+    if loaded_module is not None:
+        if target_globals is not None:
+            target_globals[module] = loaded_module
+        else:
+            globals()[module] = loaded_module
+        return True
     return False
 
 

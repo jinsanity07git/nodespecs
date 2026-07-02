@@ -177,7 +177,14 @@ class Pep668PromptTests(unittest.TestCase):
 
     def _patch_bare_pip_prereqs(self, isatty=True, input_side_effect=None):
         """Mock the prereqs so `check_imp` reaches `_pip_install_or_raise`."""
-        patcher_load = mock.patch.object(deps, "_load_module", return_value=None)
+        patcher_load = mock.patch.object(
+            deps, "_load_module",
+            # First call returns None (module not found). If the install
+            # succeeds and check_imp re-attempts the load (fix for issue
+            # #16), the second call returns a sentinel so it injects
+            # successfully into target_globals.
+            side_effect=[None, mock.MagicMock()],
+        )
         patcher_ws = mock.patch.object(
             deps, "_find_workspace_root_with_venv", return_value=None
         )
@@ -204,8 +211,9 @@ class Pep668PromptTests(unittest.TestCase):
         with _mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
             result = deps.check_imp("psutil")
 
-        # Success path: check_imp returns False (it does not re-import).
-        self.assertFalse(result)
+        # Success path: check_imp re-loads the module after install and
+        # injects it into target_globals (fix for issue #16).
+        self.assertTrue(result)
         # Two pip invocations; the second must carry --break-system-packages.
         self.assertEqual(len(calls), 2)
         self.assertIn("--break-system-packages", calls[1])

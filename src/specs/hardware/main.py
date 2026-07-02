@@ -278,6 +278,7 @@ def info_mem():
     print(f"Percentage: {swap.percent}%")
 
 
+@ensure_lib("psutil")
 def info_disk():
     # Disk Information
     print("=" * 40, "Disk Information", "=" * 40)
