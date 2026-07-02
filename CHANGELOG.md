@@ -6,6 +6,17 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-02
+
+### Fixed
+- `check_imp()` now re-loads and injects the installed module into the
+  caller's globals after a successful `pip install` (or `uv add` /
+  `uv pip install`), fixing a `NameError: name 'psutil' is not defined`
+  crash when an `@ensure_lib`-decorated function triggered the
+  auto-install path on its first call. (issue #16)
+- `info_disk()` is now decorated with `@ensure_lib("psutil")`, matching
+  all other psutil-dependent functions in the hardware module. (issue #16)
+
 ## [0.4.4] - 2026-07-01
 
 ### Added
