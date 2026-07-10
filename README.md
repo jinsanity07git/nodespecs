@@ -152,7 +152,10 @@ Export failed: <error message>
 The SQLite `files` table has columns for `filepath`, `filename`,
 `extension`, `size`, `on_disk`, `blocks`, `nlinks`, `inode`, `device`,
 `last_modified`, and `indexed_at`. The `statistics` table holds the
-same counters that the CLI prints.
+same counters that the CLI prints. `inode` and `device` are stored as
+decimal text so unsigned filesystem identifiers from APFS, exFAT, and
+similar filesystems are preserved even when they exceed SQLite's
+signed 64-bit integer range.
 
 
 ```shell

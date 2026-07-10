@@ -34,6 +34,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
+SQLITE_INT_MIN = -(2 ** 63)
+SQLITE_INT_MAX = 2 ** 63 - 1
+
+
 def _on_disk_bytes(st: "os.stat_result") -> int:
     """Return apparent on-disk bytes for a stat result.
 
@@ -48,6 +52,94 @@ def _on_disk_bytes(st: "os.stat_result") -> int:
     if blocks is None:
         return st.st_size
     return blocks * 512
+
+
+def _sqlite_int_or_text(value):
+    """Return a value sqlite3 can bind without signed-64-bit overflow."""
+    if isinstance(value, int) and not SQLITE_INT_MIN <= value <= SQLITE_INT_MAX:
+        return str(value)
+    return value
+
+
+def _sqlite_decimal_text(value):
+    """Store potentially unsigned filesystem identifiers exactly as text."""
+    if value is None:
+        return None
+    return str(value)
+
+
+def _create_files_table(cursor) -> None:
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filepath TEXT NOT NULL UNIQUE,
+            filename TEXT NOT NULL,
+            extension TEXT,
+            size INTEGER,
+            on_disk INTEGER,
+            blocks INTEGER,
+            nlinks INTEGER,
+            inode TEXT,
+            device TEXT,
+            last_modified TIMESTAMP,
+            indexed_at TIMESTAMP
+        )
+    """
+    )
+
+
+def _files_column_types(cursor) -> Dict[str, str]:
+    return {
+        row[1]: (row[2] or "").upper()
+        for row in cursor.execute("PRAGMA table_info(files)").fetchall()
+    }
+
+
+def _rebuild_files_table_with_text_ids(cursor) -> None:
+    cursor.execute("DROP INDEX IF EXISTS idx_files_inode")
+    cursor.execute("DROP INDEX IF EXISTS idx_files_ext")
+    cursor.execute("DROP TABLE IF EXISTS files__schema_migration_old")
+    cursor.execute("ALTER TABLE files RENAME TO files__schema_migration_old")
+    _create_files_table(cursor)
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO files
+        (id, filepath, filename, extension, size, on_disk, blocks,
+         nlinks, inode, device, last_modified, indexed_at)
+        SELECT id, filepath, filename, extension, size, on_disk, blocks,
+               nlinks,
+               CASE WHEN inode IS NULL THEN NULL ELSE CAST(inode AS TEXT) END,
+               CASE WHEN device IS NULL THEN NULL ELSE CAST(device AS TEXT) END,
+               last_modified, indexed_at
+        FROM files__schema_migration_old
+    """
+    )
+    cursor.execute("DROP TABLE files__schema_migration_old")
+
+
+def _ensure_files_schema(cursor) -> None:
+    _create_files_table(cursor)
+
+    # Idempotent migration: if this is an older DB (pre-0.4.1),
+    # ``CREATE TABLE IF NOT EXISTS`` above is a no-op and the table
+    # still has only the original 6 columns. Add any missing columns
+    # via ``PRAGMA table_info`` + ``ALTER TABLE``.
+    new_file_columns = {
+        "on_disk": "INTEGER",
+        "blocks": "INTEGER",
+        "nlinks": "INTEGER",
+        "inode": "TEXT",
+        "device": "TEXT",
+    }
+    existing = set(_files_column_types(cursor))
+    for name, decl in new_file_columns.items():
+        if name not in existing:
+            cursor.execute(f"ALTER TABLE files ADD COLUMN {name} {decl}")
+
+    types = _files_column_types(cursor)
+    if types.get("inode") != "TEXT" or types.get("device") != "TEXT":
+        _rebuild_files_table_with_text_ids(cursor)
 
 
 class FileIndexer:
@@ -143,6 +235,7 @@ class FileIndexer:
         are recorded under the symlink's path.
         """
         st = entry.stat(follow_symlinks=follow_symlinks)
+        blocks = getattr(st, "st_blocks", None)
         _, ext = os.path.splitext(entry.name)
         ext = ext.lower()
         posix_path = Path(filepath).as_posix()
@@ -152,7 +245,7 @@ class FileIndexer:
             "extension": ext,
             "size": st.st_size,
             "on_disk": _on_disk_bytes(st),
-            "blocks": st.st_blocks,
+            "blocks": blocks,
             "nlinks": st.st_nlink,
             "inode": st.st_ino,
             "device": st.st_dev,
@@ -300,52 +393,10 @@ class FileIndexer:
         try:
             cursor = conn.cursor()
 
-            # Create the files table with the new stat columns. Note:
-            # the indexes are created *after* the migration block
-            # below, because the index on (device, inode) would fail
-            # on a pre-0.4.1 table that does not yet have those
-            # columns.
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS files (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filepath TEXT NOT NULL UNIQUE,
-                    filename TEXT NOT NULL,
-                    extension TEXT,
-                    size INTEGER,
-                    on_disk INTEGER,
-                    blocks INTEGER,
-                    nlinks INTEGER,
-                    inode INTEGER,
-                    device INTEGER,
-                    last_modified TIMESTAMP,
-                    indexed_at TIMESTAMP
-                )
-            """
-            )
-
-            # Idempotent migration: if this is an older DB (pre-0.4.1),
-            # ``CREATE TABLE IF NOT EXISTS`` above is a no-op and the
-            # table still has only the original 6 columns. The subsequent
-            # ``INSERT OR REPLACE`` would fail with
-            # ``SQLite error: no such column: device``. Add any missing
-            # columns via ``PRAGMA table_info`` + ``ALTER TABLE``.
-            _NEW_FILE_COLUMNS = {
-                "on_disk": "INTEGER",
-                "blocks":  "INTEGER",
-                "nlinks":  "INTEGER",
-                "inode":   "INTEGER",
-                "device":  "INTEGER",
-            }
-            existing = {
-                row[1]
-                for row in cursor.execute("PRAGMA table_info(files)").fetchall()
-            }
-            for name, decl in _NEW_FILE_COLUMNS.items():
-                if name not in existing:
-                    cursor.execute(
-                        f"ALTER TABLE files ADD COLUMN {name} {decl}"
-                    )
+            # Keep schema setup before index creation so older databases
+            # gain missing columns and 0.4.1-0.4.5 databases move
+            # inode/device to TEXT before new rows are written.
+            _ensure_files_schema(cursor)
 
             # Indexes can be created only after the columns exist.
             cursor.execute(
@@ -380,12 +431,12 @@ class FileIndexer:
                         info["filepath"],
                         info["filename"],
                         info["extension"],
-                        info["size"],
-                        info["on_disk"],
-                        info["blocks"],
-                        info["nlinks"],
-                        info["inode"],
-                        info["device"],
+                        _sqlite_int_or_text(info["size"]),
+                        _sqlite_int_or_text(info["on_disk"]),
+                        _sqlite_int_or_text(info["blocks"]),
+                        _sqlite_int_or_text(info["nlinks"]),
+                        _sqlite_decimal_text(info["inode"]),
+                        _sqlite_decimal_text(info["device"]),
                         info["last_modified"].isoformat(),
                         info["indexed_at"].isoformat(),
                     )

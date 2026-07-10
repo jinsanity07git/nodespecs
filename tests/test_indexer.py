@@ -166,6 +166,31 @@ class FileIndexerSqliteTests(unittest.TestCase):
             ):
                 self.assertIn(key, stat_keys)
 
+    def test_export_handles_oversized_inode_and_device(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            _write(root / "huge-meta.bin", b"x")
+            indexer = FileIndexer()
+            indexer.index_directory(str(root))
+            info = next(iter(indexer.files.values()))
+            info["inode"] = 2 ** 63
+            info["device"] = 2 ** 64 - 1
+
+            db = Path(tmp) / "index.db"
+            ok, err = indexer.export_to_sqlite(str(db))
+            self.assertTrue(ok, msg=err)
+
+            with sqlite3.connect(str(db)) as conn:
+                row = conn.execute(
+                    "SELECT typeof(inode), inode, typeof(device), device "
+                    "FROM files WHERE filename = 'huge-meta.bin'"
+                ).fetchone()
+
+            self.assertEqual(
+                row,
+                ("text", str(2 ** 63), "text", str(2 ** 64 - 1)),
+            )
+
 
 class FileIndexerWindowsStatTests(unittest.TestCase):
     """On Windows ``st_blocks`` is ``None``; the indexer must not crash."""
@@ -304,6 +329,60 @@ class FileIndexerMigrationTests(unittest.TestCase):
             self.assertEqual(row[0], 5)        # size
             self.assertGreaterEqual(row[1], 5) # on_disk (>= size; == size if blocks None)
             self.assertGreaterEqual(row[2], 1) # nlinks
+
+    def test_integer_inode_device_columns_are_migrated_to_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            data_dir.mkdir()
+            _write(data_dir / "a.txt", b"hello")
+            db = Path(tmp) / "legacy-stat-columns.db"
+            with sqlite3.connect(str(db)) as c:
+                c.execute(
+                    "CREATE TABLE files ("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    "filepath TEXT NOT NULL UNIQUE, "
+                    "filename TEXT NOT NULL, "
+                    "extension TEXT, "
+                    "size INTEGER, "
+                    "on_disk INTEGER, "
+                    "blocks INTEGER, "
+                    "nlinks INTEGER, "
+                    "inode INTEGER, "
+                    "device INTEGER, "
+                    "last_modified TIMESTAMP, "
+                    "indexed_at TIMESTAMP)"
+                )
+                c.execute(
+                    "CREATE TABLE statistics ("
+                    "key TEXT PRIMARY KEY, value TEXT)"
+                )
+                c.commit()
+
+            indexer = FileIndexer()
+            indexer.index_directory(str(data_dir))
+            info = next(iter(indexer.files.values()))
+            info["inode"] = 2 ** 63
+            info["device"] = 2 ** 64 - 1
+
+            ok, err = indexer.export_to_sqlite(str(db))
+            self.assertTrue(ok, msg=err)
+
+            with sqlite3.connect(str(db)) as c:
+                col_types = {
+                    r[1]: r[2]
+                    for r in c.execute("PRAGMA table_info(files)").fetchall()
+                }
+                row = c.execute(
+                    "SELECT typeof(inode), inode, typeof(device), device "
+                    "FROM files WHERE filename = 'a.txt'"
+                ).fetchone()
+
+            self.assertEqual(col_types["inode"].upper(), "TEXT")
+            self.assertEqual(col_types["device"].upper(), "TEXT")
+            self.assertEqual(
+                row,
+                ("text", str(2 ** 63), "text", str(2 ** 64 - 1)),
+            )
 
 
 if __name__ == "__main__":

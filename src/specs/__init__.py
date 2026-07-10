@@ -1,6 +1,6 @@
 from .hardware import ensure_libs, info_gpu
 # Version of the node-specs package
-__version__ = "0.4.5"
+__version__ = "0.4.6"
 
 __all__ = [
     "ensure_libs",
@@ -63,4 +63,3 @@ def environment_check():
     from .pyinfo import environment_check as _environment_check
 
     return _environment_check()
-

@@ -6,6 +6,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-07-10
+
+### Fixed
+- `FileIndexer.export_to_sqlite()` now handles filesystems that report
+  inode or device identifiers outside SQLite's signed 64-bit integer
+  range. The export stores those identifiers as decimal text, migrates
+  existing `files` tables whose `inode` / `device` columns were declared
+  as `INTEGER`, and no longer aborts with
+  `Python int too large to convert to SQLite INTEGER`. (issue #18)
+
 ## [0.4.5] - 2026-07-02
 
 ### Fixed
