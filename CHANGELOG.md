@@ -6,6 +6,28 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-11-13
+
+### Fixed
+- `info_gpu()` no longer crashes with
+  `TypeError: 'module' object is not callable` on hosts that have an
+  NVIDIA GPU. The lazy dependency loader binds the `tabulate` *module*
+  into the function's globals; the table call now invokes the function
+  `tabulate.tabulate(...)` instead of the module itself. GPU-less hosts
+  were unaffected because `info_gpu()` returns early when `nvidia-smi`
+  is not on PATH, which is why the bug slipped through. (issue #20)
+- `info_gpu()` now also degrades gracefully when `check_imp()` returns
+  `False` (module still not importable after a nominal install):
+  a friendly message is printed instead of an uncaught `NameError`
+  at the table call.
+
+### Tests
+- `tests/test_info_gpu.py`: new `InfoGpuTableTests` covering the
+  GPU-present rendering path (faked `GPUtil`, real `tabulate` — this
+  test reproduces the issue #20 TypeError on the pre-fix code) and the
+  `check_imp`-returns-False degrade path. No NVIDIA hardware, network,
+  or new dependencies required.
+
 ## [0.4.6] - 2026-07-10
 
 ### Fixed
