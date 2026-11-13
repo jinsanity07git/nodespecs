@@ -5,7 +5,7 @@ import socket
 import sys
 import unittest
 from collections import namedtuple
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -167,6 +167,25 @@ class CliDefaultTests(unittest.TestCase):
         info_mem.assert_not_called()
         info_disk.assert_not_called()
         info_net.assert_not_called()
+
+    def test_default_cli_degrades_gracefully_when_install_unavailable(self):
+        """Issue #21: when the lazy dependency install ultimately fails
+        (e.g. a pip-less uv virtualenv), `python -m specs` must print a
+        clean message and exit non-zero, not dump a stack trace."""
+        err = io.StringIO()
+        with mock.patch(
+            "specs.hardware.get_system_info",
+            side_effect=ImportError(
+                "Cannot install 'psutil': this Python environment has "
+                "no pip module (uv-created virtualenvs do not include one)."
+            ),
+        ):
+            with redirect_stderr(err):
+                exit_code = cli.main([])
+
+        self.assertEqual(exit_code, 1)
+        self.assertIn("System info unavailable", err.getvalue())
+        self.assertIn("no pip module", err.getvalue())
 
 
 if __name__ == "__main__":
