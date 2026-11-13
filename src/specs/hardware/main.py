@@ -354,11 +354,20 @@ def info_gpu():
 
     for module in ("GPUtil", "tabulate"):
         try:
-            check_imp(module, target_globals=globals())
+            loaded = check_imp(module, target_globals=globals())
         except ImportError as e:
             print(
                 f"GPU utilities unavailable: {e}. "
                 "Run 'uv pip install GPUtil tabulate' to enable."
+            )
+            return
+        # check_imp can return False without raising (install succeeded
+        # but the module is still not importable). Bail out with a
+        # message instead of crashing later with a NameError.
+        if not loaded:
+            print(
+                f"GPU utilities unavailable: module {module!r} could not "
+                "be loaded. Run 'uv pip install GPUtil tabulate' to enable."
             )
             return
 
@@ -387,8 +396,11 @@ def info_gpu():
     ]
 
     print("=" * 40, "GPU Details", "=" * 40)
+    # `tabulate` in this scope is the module object (injected into
+    # globals by check_imp), so the callable is tabulate.tabulate()
+    # — calling the module itself raises TypeError (issue #20).
     print(
-        tabulate(
+        tabulate.tabulate(
             list_gpus,
             headers=(
                 "id",
