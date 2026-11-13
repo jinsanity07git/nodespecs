@@ -292,6 +292,162 @@ class Pep668PromptTests(unittest.TestCase):
         self.assertIn("retry blew up", str(ctx.exception))
 
 
+class PiplessEnvironmentTests(unittest.TestCase):
+    """Issue #21: virtual environments created by uv do not include pip,
+    so the bare `python -m pip install` fallback failed with
+    "No module named pip" (the uv fast path in check_imp was skipped
+    because it requires a `.venv` workspace root above the installed
+    package, which never exists for a `uv pip install nodespecs`-style
+    install).
+
+    When pip is missing, `_pip_install_or_raise` must now:
+      1. try `uv pip install --python <sys.executable>` (venvs only),
+      2. fall back to an `ensurepip` bootstrap, then `python -m pip`,
+      3. raise a friendly ImportError listing the options.
+
+    These tests never run uv / pip / ensurepip; `subprocess.run` and the
+    helper predicates are mocked.
+    """
+
+    def _patch_prereqs(self, load_side_effect=None, uv_path=None,
+                       pip_available=False, in_venv=True):
+        """Mock the prereqs so `check_imp` reaches the bare fallback in
+        `_pip_install_or_raise` with the chosen pip-less configuration."""
+        if isinstance(pip_available, (list, tuple)):
+            pip_patcher = mock.patch.object(
+                deps, "_pip_available", side_effect=list(pip_available)
+            )
+        else:
+            pip_patcher = mock.patch.object(
+                deps, "_pip_available", return_value=pip_available
+            )
+        patchers = [
+            mock.patch.object(deps, "_load_module", side_effect=load_side_effect),
+            mock.patch.object(
+                deps, "_find_workspace_root_with_venv", return_value=None
+            ),
+            mock.patch.object(deps.shutil, "which", return_value=uv_path),
+            pip_patcher,
+            mock.patch.object(deps, "_in_virtualenv", return_value=in_venv),
+        ]
+        for p in patchers:
+            p.start()
+            self.addCleanup(p.stop)
+        # check_imp injects the loaded module into deps' globals when no
+        # target_globals is passed; undo that so other tests stay clean.
+        self.addCleanup(deps.__dict__.pop, "psutil", None)
+
+    def _run_factory(self, scenarios):
+        calls = []
+        queue = list(scenarios)
+
+        def fake_run(cmd, **kwargs):
+            calls.append(list(cmd))
+            if queue:
+                return queue.pop(0)
+            return _RunResult(returncode=1, stderr="unexpected extra run")
+
+        return fake_run, calls
+
+    def test_uv_fallback_used_when_pip_missing(self):
+        """A pip-less venv with uv on PATH installs via
+        `uv pip install --python <interpreter>` (issue #21 scenario)."""
+        fake_run, calls = self._run_factory([_RunResult(returncode=0, stderr="")])
+        self._patch_prereqs(
+            load_side_effect=[None, mock.sentinel.module],
+            uv_path="/usr/bin/uv",
+        )
+        with mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            result = deps.check_imp("psutil")
+
+        self.assertTrue(result)
+        self.assertEqual(
+            calls,
+            [["/usr/bin/uv", "pip", "install", "--python", sys.executable,
+              "psutil"]],
+        )
+
+    def test_uv_failure_falls_back_to_ensurepip(self):
+        """If the uv install fails, ensurepip bootstraps pip and the
+        regular `python -m pip` path takes over."""
+        fake_run, calls = self._run_factory([
+            _RunResult(returncode=1, stderr="uv download error"),  # uv
+            _RunResult(returncode=0, stderr=""),                   # ensurepip
+            _RunResult(returncode=0, stderr=""),                   # pip install
+        ])
+        # pip is missing at the start, present after the bootstrap.
+        self._patch_prereqs(
+            load_side_effect=[None, mock.sentinel.module],
+            uv_path="/usr/bin/uv",
+            pip_available=[False, True],
+        )
+        with mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            result = deps.check_imp("psutil")
+
+        self.assertTrue(result)
+        self.assertEqual(calls[0][:4],
+                         ["/usr/bin/uv", "pip", "install", "--python"])
+        self.assertEqual(calls[1], [sys.executable, "-m", "ensurepip",
+                                    "--upgrade"])
+        self.assertEqual(calls[2], [sys.executable, "-m", "pip", "install",
+                                    "psutil"])
+
+    def test_ensurepip_bootstrap_when_no_uv(self):
+        """A pip-less venv with no uv on PATH bootstraps pip via
+        ensurepip, then installs via `python -m pip`."""
+        fake_run, calls = self._run_factory([
+            _RunResult(returncode=0, stderr=""),  # ensurepip
+            _RunResult(returncode=0, stderr=""),  # pip install
+        ])
+        self._patch_prereqs(
+            load_side_effect=[None, mock.sentinel.module],
+            uv_path=None,
+            pip_available=[False, True],
+        )
+        with mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            result = deps.check_imp("psutil")
+
+        self.assertTrue(result)
+        self.assertEqual(calls[0], [sys.executable, "-m", "ensurepip",
+                                    "--upgrade"])
+        self.assertEqual(calls[1], [sys.executable, "-m", "pip", "install",
+                                    "psutil"])
+
+    def test_friendly_importerror_when_no_installer_available(self):
+        """pip missing, no uv, ensurepip disabled → friendly ImportError
+        listing the options, never a raw subprocess error."""
+        fake_run, calls = self._run_factory(
+            [_RunResult(returncode=1, stderr="ensurepip is disabled")]
+        )
+        self._patch_prereqs(load_side_effect=[None], uv_path=None)
+        with mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError) as ctx:
+                deps.check_imp("psutil")
+
+        self.assertIn("no pip module", str(ctx.exception))
+        self.assertIn("uv pip install psutil", str(ctx.exception))
+        self.assertIn("ensurepip", str(ctx.exception))
+        # Only the ensurepip attempt ran — no pip command was possible.
+        self.assertEqual(len(calls), 1)
+
+    def test_uv_fallback_restricted_to_virtualenvs(self):
+        """uv must not install into an externally-managed system Python
+        without consent (PEP 668): outside a venv only ensurepip is
+        attempted."""
+        fake_run, calls = self._run_factory(
+            [_RunResult(returncode=1, stderr="ensurepip is disabled")]
+        )
+        self._patch_prereqs(
+            load_side_effect=[None], uv_path="/usr/bin/uv", in_venv=False
+        )
+        with mock.patch.object(deps.subprocess, "run", side_effect=fake_run):
+            with self.assertRaises(ImportError):
+                deps.check_imp("psutil")
+
+        self.assertEqual(calls, [[sys.executable, "-m", "ensurepip",
+                                  "--upgrade"]])
+
+
 class _RunResult(object):
     """Minimal stand-in for subprocess.CompletedProcess (3.5+)."""
 

@@ -108,8 +108,93 @@ def _prompt_break_system_packages(install_target):
     return answer.strip().lower() in ("y", "yes")
 
 
+def _pip_available():
+    """Return True if the current interpreter provides the pip module.
+
+    Virtual environments created by `uv venv` / `uv init` do not include
+    pip by default, so `python -m pip install ...` fails there with
+    "No module named pip" (issue #21).
+    """
+    try:
+        return importlib.util.find_spec("pip") is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def _in_virtualenv():
+    """Return True when the running interpreter is a virtual environment
+    (as opposed to a base / system installation)."""
+    return sys.prefix != sys.base_prefix
+
+
+def _uv_pip_install(install_target):
+    """Install `install_target` into the *current* environment with
+    `uv pip install --python <sys.executable>`.
+
+    Preferred fallback when pip itself is missing, since uv-created
+    virtualenvs are exactly the environments that ship without pip
+    (issue #21). Restricted to virtual environments so we never write
+    into an externally-managed system Python without the user's consent
+    (PEP 668). Returns True on success, False otherwise.
+    """
+    uv_path = shutil.which("uv")
+    if uv_path is None or not _in_virtualenv():
+        return False
+    print(f"Attempting to install missing module via uv: {install_target}")
+    proc = subprocess.run(
+        [uv_path, "pip", "install", "--python", sys.executable, install_target],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.returncode == 0:
+        return True
+    print("uv pip install failed, attempting to bootstrap pip")
+    return False
+
+
+def _ensurepip_bootstrap():
+    """Bootstrap pip into the current environment via
+    `python -m ensurepip --upgrade`.
+
+    Returns True when pip is importable afterwards.
+    """
+    print("Attempting to bootstrap pip via: python -m ensurepip --upgrade")
+    proc = subprocess.run(
+        [sys.executable, "-m", "ensurepip", "--upgrade"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    if proc.returncode != 0:
+        print("pip bootstrap failed (ensurepip unavailable or disabled)")
+        return False
+    importlib.invalidate_caches()
+    return _pip_available()
+
+
+def _friendly_no_pip_message(install_target):
+    """User-facing explanation shown when the current environment has no
+    pip and neither the uv fallback nor the ensurepip bootstrap could
+    provide an installer (issue #21)."""
+    return (
+        f"Cannot install {install_target!r}: this Python environment has "
+        "no pip module (uv-created virtualenvs do not include one). "
+        "Options:\n"
+        f"  - run `uv pip install {install_target}`, or\n"
+        "  - bootstrap pip with `python -m ensurepip --upgrade`, or\n"
+        "  - use an environment that includes pip"
+    )
+
+
 def _pip_install_or_raise(install_target):
     """Run `python -m pip install <install_target>`.
+
+    Virtual environments created by uv ship without pip, so the bare
+    `python -m pip` invocation fails there with "No module named pip"
+    (issue #21). When pip is missing we first try `uv pip install` into
+    the current environment, then an `ensurepip` bootstrap, and only then
+    give up with a friendly `ImportError`.
 
     Unlike a bare `subprocess.check_call`, a non-zero exit never surfaces as a
     raw `subprocess.CalledProcessError` (issue #14): on a PEP 668
@@ -117,6 +202,16 @@ def _pip_install_or_raise(install_target):
     `--break-system-packages` retry, and every other failure becomes a clear
     `ImportError`. Returns None on success.
     """
+    if not _pip_available():
+        if _uv_pip_install(install_target):
+            return
+        if _ensurepip_bootstrap():
+            # pip is now importable; fall through to `python -m pip` so
+            # the PEP 668 handling below still applies.
+            pass
+        else:
+            raise ImportError(_friendly_no_pip_message(install_target))
+
     # Use stdout/stderr=PIPE + universal_newlines (not capture_output / text,
     # which are 3.7+) so the stated python>=3.6 target keeps working.
     base_cmd = [sys.executable, "-m", "pip", "install", install_target]
