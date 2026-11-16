@@ -6,6 +6,34 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [0.4.8] - 2026-11-13
+
+### Fixed
+- The lazy dependency auto-install now works inside uv-created virtual
+  environments, which do not include pip. Previously the bare
+  `python -m pip install` fallback failed with
+  `No module named pip` (the uv fast path only applied to repo
+  checkouts with a `.venv` workspace root, never to a package installed
+  into a venv). When pip is missing, `check_imp()` now tries
+  `uv pip install --python <interpreter>` first (restricted to virtual
+  environments so an externally-managed system Python is never written
+  to without consent), then bootstraps pip via
+  `python -m ensurepip --upgrade`, and only then gives up with a
+  friendly `ImportError` listing the options. (issue #21)
+- `python -m specs` (default summary) no longer dumps a stack trace
+  when an optional dependency cannot be auto-installed: the failure is
+  reported as a clean `System info unavailable: ...` message on stderr
+  with exit code 1. (issue #21)
+
+### Tests
+- `tests/test_deps.py`: new `PiplessEnvironmentTests` covering the uv
+  fallback, the ensurepip bootstrap (with and without a prior uv
+  failure), the friendly no-installer error, and the venv-only gate on
+  the uv path. Network-free; `subprocess.run` and the helper
+  predicates are mocked.
+- `tests/test_compact_summary.py`: new CLI test asserting the default
+  command degrades gracefully on an uninstallable dependency.
+
 ## [0.4.7] - 2026-11-13
 
 ### Fixed

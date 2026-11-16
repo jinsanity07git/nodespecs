@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,7 +43,14 @@ def _run_default(args) -> int:
 
     from .hardware import get_system_info
 
-    get_system_info()
+    try:
+        get_system_info()
+    except ImportError as e:
+        # A missing optional dependency that could not be auto-installed
+        # (e.g. a pip-less uv virtualenv, issue #21) degrades to a clean
+        # message and exit code instead of a stack trace.
+        print(f"System info unavailable: {e}", file=sys.stderr)
+        return 1
     return 0
 
 
